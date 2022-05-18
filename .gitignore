@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# folders
+ESP32/datasheets
+ESP32/esptool*
