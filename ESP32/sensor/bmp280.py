@@ -27,7 +27,7 @@ class BMP280:
     def _rw_limiter_init(self):
         self.limiter = False
         Timer(self.timer_id).init(
-            period=0.1,
+            period=100,
             mode=Timer.ONE_SHOT,
             callback=self._rw_limiter
         )
@@ -35,13 +35,10 @@ class BMP280:
     def _rw_limiter(self, *args):
         self.limiter = True
 
-    def _read(self, reg_addr: int, size: int=1) -> ...:
+    def _read(self, reg_addr: int, size: int=1) -> bytes:
         while self.limiter is not True:
             pass
         self._rw_limiter_init()
-        # test = self._i2c.readfrom_mem(self._addr, reg_addr, size)
-        # print(f"{type(test)=}")
-        # return test
         return self._i2c.readfrom_mem(self._addr, reg_addr, size)
 
     def _read_bits(self, reg_addr: int, length: int, shift: int=0) -> int:
