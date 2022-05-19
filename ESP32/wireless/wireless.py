@@ -19,7 +19,7 @@ class WLAN:
             print('Connecting to network...')
             wlan.connect(self.SSID, self.PWD)
             while not wlan.isconnected():
-                if time.time() - _time >= self.timeout:
+                if time() - _time >= self.timeout:
                     print('RESET DEVICE...')
                     sleep(0.1)  # Give the ESP32 time to print the line before resetting
                     machine.reset()  # Reset ESP32
