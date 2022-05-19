@@ -30,13 +30,13 @@ The table below is for one setup. If multiple are needed, multiply these values 
 | [IP67 Antenna][ESP32-LINK6]        | Antenna         | 1      | Antenna for the ESP32. Can be used outside. <br> **50 Ohms**.                                  |
 | [Jumper Cables][ESP32-LINK7]       | I2C Wires       | 1      | Wires for the connection between the ESP32 and the BMP280 sensors.                             |
 
-[ESP32-LINK1]: (https://www.espressif.com/en/products/devkits/esp32-devkitc)
-[ESP32-LINK2]: (https://www.bosch-sensortec.com/products/environmental-sensors/pressure-sensors/bmp280/)
-[ESP32-LINK3]: (https://www.digikey.nl/nl/products/detail/cvilux-usa/DH-20G50016/13177485)
-[ESP32-LINK4]: (https://www.allekabels.nl/sma-kabel/1326/1306109/sma-kabel.html)
-[ESP32-LINK5]: (https://www.conrad.nl/nl/p/mean-well-hdr-15-5-din-rail-netvoeding-5-v-dc-2-4-a-12-w-1-x-1894091.html)
-[ESP32-LINK6]: (https://www.digikey.nl/nl/products/detail/linx-technologies-inc/ANT-W63-WRT-SMA/15622872)
-[ESP32-LINK7]: (https://www.conrad.nl/nl/p/renkforce-jkff403-jumper-kabel-arduino-banana-pi-raspberry-pi-40x-draadbrug-bus-40x-draadbrug-bus-30-00-cm-bont-2299845.html)
+[ESP32-LINK1]: https://www.espressif.com/en/products/devkits/esp32-devkitc
+[ESP32-LINK2]: https://www.bosch-sensortec.com/products/environmental-sensors/pressure-sensors/bmp280/
+[ESP32-LINK3]: https://www.digikey.nl/nl/products/detail/cvilux-usa/DH-20G50016/13177485
+[ESP32-LINK4]: https://www.allekabels.nl/sma-kabel/1326/1306109/sma-kabel.html
+[ESP32-LINK5]: https://www.conrad.nl/nl/p/mean-well-hdr-15-5-din-rail-netvoeding-5-v-dc-2-4-a-12-w-1-x-1894091.html
+[ESP32-LINK6]: https://www.digikey.nl/nl/products/detail/linx-technologies-inc/ANT-W63-WRT-SMA/15622872
+[ESP32-LINK7]: https://www.conrad.nl/nl/p/renkforce-jkff403-jumper-kabel-arduino-banana-pi-raspberry-pi-40x-draadbrug-bus-40x-draadbrug-bus-30-00-cm-bont-2299845.html
 
 ## Setup Guide
 This setup guide will explain the setup procedure of the ESP32 microcontrollers and the Raspberry Pi.
@@ -68,6 +68,6 @@ Make sure that you enter this command when the CLI is executed from the same fol
 
 | Release Name | Date       | Pull Request | Type        | Stable |
 | :----------- | :--------: | :----------: | :---:       | :----: |
-| v0.0.1-alpha | 18-05-2022 | [#1][PR1]    | Pre-release | :x:    |
+| v0.1.0-alpha | **xx**-05-2022 | [#1][PR1]    | Pre-release | :x:    |
 
 [PR1]: ()
