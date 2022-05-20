@@ -131,3 +131,6 @@ dmypy.json
 # folders
 ESP32/datasheets
 ESP32/esptool*
+
+# Other files
+ESP32/wireless/settings.py
