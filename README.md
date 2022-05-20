@@ -81,12 +81,13 @@ When the COM-port is found, enter the following line in your preferred CLI:
 _Make sure that you are in the same directory as the `install.bat` file. You can make sure by copying the full directory path and enter it in the cli. Command: `cd 'full directory path'`._
 
 The script should execute all necessary steps.
+
 _The script uses the Python packages [adafruit-ampy](https://pypi.org/project/adafruit-ampy/) and [esptool](https://docs.espressif.com/projects/esptool/en/latest/esp32/). Click on the links to see more information about the packages._
 
 ## Revision History
 
 | Release Name | Date       | Pull Request | Type        | Stable |
 | :----------- | :--------: | :----------: | :---:       | :----: |
-| v0.1.0-alpha | **xx**-05-2022 | [#1][PR1]    | Pre-release | :x:    |
+| v0.1.0-alpha | **xx-xx**-2022 | [#1][PR1]    | Pre-release | :x:    |
 
 [PR1]: ()

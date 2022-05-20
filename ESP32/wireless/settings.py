@@ -4,6 +4,6 @@ PASSWORD: str = ''
 # Check if the variables are empty
 if (SSID, PASSWORD) == ('', ''):
     raise ValueError(
-        "The SSID and PASSWORD for the WiFi-connectors are empty.\n\
-        Please check the settings.py file in ESP32/wireless/"
+        "The SSID and PASSWORD for the WiFi-connectors are empty. \
+        \nPlease check the settings.py file in ESP32/wireless/"
     )
