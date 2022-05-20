@@ -133,4 +133,5 @@ ESP32/datasheets
 ESP32/esptool*
 
 # Other files
+.vscode/
 ESP32/wireless/settings.py

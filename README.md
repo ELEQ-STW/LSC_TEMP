@@ -1,12 +1,12 @@
 # LS Charge Data Collection
 ## Table of Content
 1. [About](#about)
-2. [Components Used](#components-used)
+2. [Used Components](#used-components)
     1. [Components ESP32](#components-esp32)
 3. [Setup Guide](#setup-guide)
-    1. [ESP32](#esp32)
-        1. [Installing Packages](#installing-packages)
-        2. [Flashing the ESP32](#flashing-the-esp32)
+    1. [Preparation](#preparation)
+    2. [ESP32](#esp32)
+        1. [Flashing and Setup](#flashing-and-setup)
 4. [Revision History](#revision-history)
 
 ## About
@@ -17,7 +17,7 @@ The LSC_TEMP project will tackle this by monitoring the internal temperature of 
 These microcontrollers report back to the Raspberry Pi via the MQTT protocol.
 All data can be read out via the LSC_TEMP website that is hosted on the Raspberry Pi.
 
-## Components Used
+## Used Components
 ### Components ESP32
 The table below is for one setup. If multiple are needed, multiply these values with the desired quantity.
 | Name                               | Function        | Amount | Comments                                                                                       |
@@ -40,29 +40,48 @@ The table below is for one setup. If multiple are needed, multiply these values 
 
 ## Setup Guide
 This setup guide will explain the setup procedure of the ESP32 microcontrollers and the Raspberry Pi.
+### Preparation
+Make sure you have the following points done:
+
+- Installed [Python 3.10](https://www.python.org/downloads/) or newer.
+- Have access to a Command Line Interface.
+    - An IDE (like [Visual Studio Code](https://code.visualstudio.com/)) is preferable but [CMD](https://en.wikipedia.org/wiki/Cmd.exe) can also be used.
+- Cloned the [Github library](https://docs.github.com/en/enterprise-server@3.5/repositories/creating-and-managing-repositories/cloning-a-repository) to the PC.
 ### ESP32
 Before you start with the setup, make sure you have all the components mentioned in [Components ESP32](#components-esp32).
-#### Installing Packages
-Before we can commission the ESP32's, we need to flash and upload some files.
-We need Python packages that can do that for us.
+#### Flashing and Setup
+The ESP32 can be flashed and set up with the `install.bat` tool. This script is specifically written to automate the flashing and setup process.
 
-First of all, make sure you have Python installed on your computer. It is advised to use Python 3.8 or newer.
+Before the files can be uploaded to the ESP32, make sure that the WLAN configuration settings are filled in. This is done by editing the [settings.py](/ESP32/wireless/settings.py) file:
 
-The packages needed are: `esptool` and `adafruit-ampy`. We can install these packages by entering the following commands in a Command Line Interface (CLI):
-```
-py -m pip install esptool adafruit-ampy
-```
-If the packages are installed successfully, go to the next step.
+``` Python
+SSID: str = ''  # <- ADD SSID OF THE DESIRED NETWORK HERE
+PASSWORD: str = ''  # <- PASSWORD OF THE DESIRED NETWORK
 
-#### Flashing the ESP32
-The ESP32 cannot understand MicroPython out of the box. We need to flash it first.
-The binary file is available in this folder. Connect the ESP32 to the computer via a USB to Micro USB cable.
-Check the used COM-port via Device Manager and type in the following command in the CLI:
+# NOTE: The SSID and PASSWORD need to be in parenthesis.
+#       If there is a parenthesis in the PASSWORD,
+#       please escape it by adding a '\' in from of the parenthesis.
+
+# Check if the variables are empty
+if (SSID, PASSWORD) == ('', ''):
+    raise ValueError(
+        "The SSID and PASSWORD for the WiFi-connectors are empty.\n\
+        Please check the settings.py file in ESP32/wireless/"
+    )
 ```
-py -m esptool --port COMX erase_flash
-py -m esptool --chip esp32 --port COMX --baud 460800 write_flash -z 0x1000 esp32-20220117-v1.18.bin
+
+Save the changes you just made to the file.
+Next, plug in the ESP32 and find the corresponding COM-port.
+You can find it at: `Device Manager` -> `Ports (COM & LPT)`
+
+When the COM-port is found, enter the following line in your preferred CLI:
+``` Shell
+.\install --port COMx --flash --setup
 ```
-Make sure that you enter this command when the CLI is executed from the same folder as the binary file.
+_Make sure that you are in the same directory as the `install.bat` file. You can make sure by copying the full directory path and enter it in the cli. Command: `cd 'full directory path'`._
+
+The script should execute all necessary steps.
+_The script uses the Python packages [adafruit-ampy](https://pypi.org/project/adafruit-ampy/) and [esptool](https://docs.espressif.com/projects/esptool/en/latest/esp32/). Click on the links to see more information about the packages._
 
 ## Revision History
 
