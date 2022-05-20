@@ -6,13 +6,13 @@ from time import time, sleep
 # Local modules and variables
 from sensor import BMP280, SETTINGS
 from umqtt import MQTTClient
-from wireless import WLAN
+from wireless import WLAN, SSID, PASSWORD
 
 # General settings for the ESP32
 SETTINGS: dict = dict(FREQ=80_000_000)
 INTERNET: dict = dict(
-    SSID='Munt_39',
-    PASSWORD='Koelkast!2'
+    SSID=SSID,
+    PASSWORD=PASSWORD
 )
 
 # I2C Settings:
