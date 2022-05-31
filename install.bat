@@ -86,7 +86,7 @@ IF NOT "%COMPORT%" == """" (
             FOR %%F IN (*.py) DO ( ampy --port %COMPORT% --baud 115200 --delay 1 put %%F /!FOLDERS[%%D]!/%%F )
         )
     )
-    ECHO DONE! You can safely disconnect the ESP32.
+    ECHO DONE You can safely disconnect the ESP32.
     EXIT
 
 :: Go here if the script is used improperly
