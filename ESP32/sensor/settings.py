@@ -22,7 +22,7 @@ class SETTINGS:
             FORCED=0x01,
             NORMAL=0x03,
         )
-        return modes[modes.keys()[mode]]
+        return modes[list(modes.keys())[mode]]
 
     # Filter (IIR) modes [CHAPTER 3.3.3]
     def iirMode(self, mode: int) -> int:
@@ -44,7 +44,7 @@ class SETTINGS:
             FILTER8=0x03,
             FILTER16=0x04,
         )
-        return filter[filter.keys()[mode]]
+        return filter[list(filter.keys())[mode]]
 
     # Oversampling modes [CHAPTER 3.3]
     def oversamplingMode(self, pressure: int, temperature: int) -> tuple[int]:
@@ -84,7 +84,7 @@ class SETTINGS:
             OSx8=0x04,
             OSx16=0x05,
         )
-        return p[p.keys()[pressure]], t[t.keys()[temperature]]
+        return p[list(p.keys())[pressure]], t[list(t.keys())[temperature]]
     
     # Standby settings [CHAPTER 3.6.3]
     def standbyTime(self, time: int) -> int:
@@ -112,4 +112,4 @@ class SETTINGS:
             _2S=0x06,
             _4S=0x07,
         )
-        return standby[standby.keys()[time]]
+        return standby[list(standby.keys())[time]]
