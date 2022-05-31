@@ -10,18 +10,20 @@ class WLAN:
         self.SSID: str = ssid
         self.PWD: str = pwd
         self.timeout: int = timeout
+        self.wlan: object = None
+
+    def __str__(self) -> str:
+        return f"Network configuration: {self.wlan.ifconfig()}"
 
     def connect(self) -> None:
         _time = time()
-        wlan = network.WLAN(network.STA_IF)
-        wlan.active(True)
-        if not wlan.isconnected():
+        self.wlan = network.WLAN(network.STA_IF)
+        self.wlan.active(True)
+        if not self.wlan.isconnected():
             print('Connecting to network...')
-            wlan.connect(self.SSID, self.PWD)
-            while not wlan.isconnected():
+            self.wlan.connect(self.SSID, self.PWD)
+            while not self.wlan.isconnected():
                 if time() - _time >= self.timeout:
                     print('RESET DEVICE...')
                     sleep(0.1)  # Give the ESP32 time to print the line before resetting
                     machine.reset()  # Reset ESP32
-
-        print(f"Network configuration: {wlan.ifconfig()}")
