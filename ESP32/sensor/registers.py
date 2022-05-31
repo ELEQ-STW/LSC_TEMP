@@ -126,4 +126,3 @@ class COMPENSATION:
         ['<h', 0x9C, 2],  # P8
         ['<h', 0x9E, 2],  # P9
     ]
-    
