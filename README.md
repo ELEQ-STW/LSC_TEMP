@@ -60,7 +60,7 @@ PASSWORD: str = ''  # <- PASSWORD OF THE DESIRED NETWORK
 
 # NOTE: The SSID and PASSWORD need to be in parenthesis.
 #       If there is a parenthesis in the PASSWORD,
-#       please escape it by adding a '\' in from of the parenthesis.
+#       please escape it by adding a '\' in front of the parenthesis.
 
 # Check if the variables are empty
 if (SSID, PASSWORD) == ('', ''):
