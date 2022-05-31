@@ -36,24 +36,19 @@ class BMP280:
         self.limiter = True
 
     def _read(self, reg_addr: int, size: int=1) -> bytes:
-        while self.limiter is not True:
-            pass
+        while not self.limiter: pass
         self._rw_limiter_init()
         return self._i2c.readfrom_mem(self._addr, reg_addr, size)
 
     def _read_bits(self, reg_addr: int, length: int, shift: int=0) -> int:
         return self._read(reg_addr)[0] >> shift & int('1' * length, 2)
 
-    def _write(self, reg_addr: int, data: bytearray):
-        if not type(data) == bytearray:
+    def _write(self, reg_addr: int, data: bytearray) -> None:
+        if not isinstance(data, bytearray):
             data = bytearray([data])
-        while self.limiter is not True:
-            pass
+        while not self.limiter: pass
         self._rw_limiter_init()
-        # test = self._i2c.writeto_mem(self._addr, reg_addr, data)
-        # print(f"{type(test)=}; {test=}")
-        # return test
-        return self._i2c.writeto_mem(self._addr, reg_addr, data)
+        self._i2c.writeto_mem(self._addr, reg_addr, data)
 
     def _write_bits(self, reg_addr: int, value: int, length: int, shift: int=0):
         data: int = self._read(reg_addr)[0]
@@ -67,20 +62,41 @@ class BMP280:
         data: list = self._read(PRES.MSB, size=6)
         # Converting function. Bit shifts three values to one (20-bit value)
         convert: function = lambda msb, lsb, xlsb: (
-            (msb << 12) + (lsb << 4) + (xlsb >> 4)
-        )
+            (msb << 12) + (lsb << 4) + (xlsb >> 4))
         self.rawP, self.rawT = convert(*data[:3]), convert(*data[3:])
-        self.fineT = (((
-            ((self.rawT >> 3) - (self.tC[0] << 1))
-            * self.tC[1]) >> 11)
-            + ((((((self.rawT >> 4) - self.tC[0])
-            * ((self.rawT >> 4) - self.tC[0])) >> 12)
-            * self.tC[2]) >> 14))
+
+        self.fineT = (
+            (self.rawT / 2.0**14.0 - self.tC[0] / 2.0**10.0)
+            * self.tC[1]
+            + ((self.rawT / 2.0**17.0 - self.tC[0] / 2.0**13.0)**2.0)
+            * self.tC[2]
+        )
+
+    def _temperature(self) -> float:
+        return self.fineT / ((2.0**9.0) * 10.0)
+    
+    def _pressure(self) -> float:
+        var1 = ((1.0 + (self.pC[2] * (self.fineT / 2.0 - 64e3)**2.0 
+               / 2.0**19.0 + self.pC[1] * (self.fineT / 2.0 - 64e3))
+               / 2.0**19.0 / 2.0**15.0) * self.pC[0])
+        var2 = (((((self.fineT / 2.0 - 64e3)**2.0 * self.pC[5] / 2.0**15.0)
+               + (self.fineT / 2.0 - 64e3) * self.pC[4] * 2.0) / 4.0)
+               + (self.pC[3] * 2.0**16.0))
+
+        try:
+            p = (((2.0**20.0 - self.rawP) - (var2 / 2.0**12.0))
+                * (5.0**4.0)*10.0 / var1)
+            var1 = self.pC[8] * p**2.0 / 2.0**31.0
+            var2 = p * self.pC[7] / 2.0**15.0
+            p = p + (var1 + var2 + self.pC[6]) / 2.0**4.0
+            return p
+        except:
+            return 0.0
 
     def _compensation(self, compensate: dict) -> list:
         return [
-            unpack(comp[0], self._read(*comp[1:]))
-            for comp in compensate.values()
+            unpack(comp[0], self._read(*comp[1:]))[0]
+            for comp in compensate
         ]
 
     def reset(self):
@@ -102,29 +118,16 @@ class BMP280:
     def chip_id(self) -> int:
         return self._read(REG.IDENTIFICATION, size=2)
 
-    @property
-    def fetch_temp(self) -> int:
+    def fetch(self, temp: bool=True, pres: bool=True) -> tuple[int|None]:
         self._measurement()
-        return ((self.fineT * 5 + 128) >> 8) / 100.0
-
-    @property
-    def fetch_pres(self) -> int:
-        self._measurement()
-        var1 = self.fineT - 128e3
-        var2 = (var1**2 * self.pC[5]) + ((var1 * self.pC[4]) << 17)
-        var2 += self.pC[3] << 35
-        var1 = ((var1**2.0 * self.pC[2]) >> 8) + ((var1 * self.pC[1]) << 12)
-        var1 = (((1 << 47) + var1) * self.pC[0]) >> 33
-
-        # Try Except needed to catch a possible div 0 error.
-        try:
-            p = int(((((2.0**20 - self.rawP) << 31) - var2) * 5.0**5) / var1)
-            var1 = (self.pC[8] * (p >> 13)**2.0) >> 25
-            var2 = (self.pC[7] * p) >> 19
-            p = ((p + var1 + var2) >> 8) + (self.pC[6] << 4)
-            return float(p / 2**8)
-        except:
-            return 0
+        if temp and pres:
+            return self._temperature(), self._pressure()
+        elif not temp and pres:
+            return self._pressure()
+        elif temp and not pres:
+            return self._temperature()
+        else:
+            return None
 
     @property
     def standby(self) -> int:
@@ -132,7 +135,7 @@ class BMP280:
 
     @standby.setter
     def standby(self, time: int) -> None:
-        assert 0x00 < time < 0x07
+        assert 0x00 <= time <= 0x07
         self._write_bits(REG.CONFIG, time, 3, shift=5)
 
     @property
@@ -141,7 +144,7 @@ class BMP280:
 
     @iir.setter
     def iir(self, mode: int) -> None:
-        assert 0x00 < mode < 0x04
+        assert 0x00 <= mode <= 0x04
         self._write_bits(REG.CONFIG, mode, 3, shift=2)
 
     @property
@@ -163,7 +166,7 @@ class BMP280:
 
     @oversampling.setter
     def oversampling(self, temp_pres: tuple) -> None:
-        assert 0x00 < temp_pres[0] < 0x05 and 0x00 < temp_pres[1] < 0x05
+        assert 0x00 <= temp_pres[0] <= 0x05 and 0x00 <= temp_pres[1] <= 0x05
         self._write_bits(REG.CTRL_MEAS, temp_pres[0], 3, shift=2)
         self._write_bits(REG.CTRL_MEAS, temp_pres[1], 3, shift=5)
 
@@ -173,5 +176,5 @@ class BMP280:
     
     @power.setter
     def power(self, mode: int) -> None:
-        assert 0x00 < mode < 0x03
+        assert 0x00 <= mode <= 0x03
         self._write_bits(REG.CTRL_MEAS, mode, 2, shift=0)
