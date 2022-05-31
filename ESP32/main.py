@@ -9,43 +9,49 @@ from umqtt import MQTTClient
 from wireless import WLAN, SSID, PASSWORD
 
 # General settings for the ESP32
-SETTINGS: dict = dict(FREQ=80_000_000)
-INTERNET: dict = dict(
-    SSID=SSID,
-    PASSWORD=PASSWORD
-)
+ESP32: dict = dict(FREQ=80_000_000)
 
 # I2C Settings:
-#   SDA: Data Pin  -> Data communication line
-#   SCL: Clock Pin -> Clock line
-#   CLK: Baudrate  -> Communication speed in Hz
-I2C1: dict = dict(SDA=18, SCL=19, CLK=400_000)
-I2C2: dict = dict(SDA=22, SCL=23, CLK=400_000)
+#   sda:  Data Pin  -> Data communication line
+#   scl:  Clock Pin -> Clock line
+#   freq: Baudrate  -> Communication speed in Hz
+I2C1: dict = dict(scl=Pin(19), sda=Pin(18), freq=100_000)
+I2C2: dict = dict(scl=Pin(23), sda=Pin(22), freq=100_000)
+
+
+def settings(debug=False) -> dict[object]:
+    # Set clock speed
+    machine.freq(ESP32['FREQ'])
+
+    # Connecting ESP32 to the internet
+    internet = WLAN(SSID, PASSWORD)
+    internet.connect()
+
+    # Setting up I2C Buses
+    i2c_A = SoftI2C(**I2C1)
+    i2c_B = SoftI2C(**I2C2)
+
+    if debug:
+        print(internet)
+        # Scanning buses for devices
+        for bus in [i2c_A, i2c_B]:
+            print(f"BUS: {bus=};\n\tADDRESSES: {list(map(hex, bus.scan()))}")
+
+    return dict(
+        BUS_A=i2c_A,
+        BUS_B=i2c_B,
+    )
 
 
 def main():
-    # Connecting ESP32 to the internet
-    internet: object = WLAN(
-        INTERNET['SSID'],
-        INTERNET['PASSWORD'],
-    )
-    internet.connect()
-
-    # Set clock speed
-    machine.freq(SETTINGS['FREQ'])
-    i2c_A = SoftI2C(
-        scl=Pin(I2C1['SCL']),
-        sda=Pin(I2C1['SDA']),
-        freq=I2C1['CLK'],
-    )
-    print(f"BMP280 ADDRESSES: {list(map(hex, i2c_A.scan()))}")
-    bmp280_A1 = BMP280(i2c_A, 0x76, timer_id=0)
-    bmp280_A2 = BMP280(i2c_A, 0x77, timer_id=1)
-
-    id1 = bmp280_A1.chip_id()[0]
-    id2 = bmp280_A2.chip_id()[0]
-    print(f"HEX: {hex(id1)}; INT: {int(id2)}; BIN: {bin(id1)}")
-    print(f"HEX: {hex(id2)}; INT: {int(id2)}; BIN: {bin(id2)}")
+    # bmp280_A1, bmp280_A2, bmp280_B1, bmp280_B2 = settings()
+    i2c = settings(debug=True)
+    sensor_A1 = BMP280(i2c['BUS_A'], 0x76, timer_id=0)
+    sensor_A2 = BMP280(i2c['BUS_A'], 0x77, timer_id=1)
+    sensor_A1.power = SETTINGS().powerMode(2)
+    sensor_A2.power = SETTINGS().powerMode(2)
+    print(f"{sensor_A1.fetch()=}")
+    print(f"{sensor_A2.fetch()=}")
 
 if __name__ == '__main__':
     main()
