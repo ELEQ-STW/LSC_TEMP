@@ -47,7 +47,7 @@ class SETTINGS:
         return filter[mode]
 
     # Oversampling modes [CHAPTER 3.3]
-    def oversamplingMode(self, pressure: int, temperature: int) -> tuple[int]:
+    def osMode(self, pressure: int, temperature: int) -> tuple[int]:
         '''
         Different oversampling modes for the BMP280:
         - Pressure:
