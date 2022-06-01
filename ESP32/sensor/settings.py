@@ -17,12 +17,12 @@ class SETTINGS:
         # Check if the value set for mode is valid.
         assert 0 <= mode <= 2
 
-        modes: dict = dict(
-            SLEEP=0x00,
-            FORCED=0x01,
-            NORMAL=0x03,
+        modes: tuple = tuple(
+            0x00,  # Sleep
+            0x01,  # Forced
+            0x03,  # Normal
         )
-        return modes[list(modes.keys())[mode]]
+        return modes[mode]
 
     # Filter (IIR) modes [CHAPTER 3.3.3]
     def iirMode(self, mode: int) -> int:
@@ -37,14 +37,14 @@ class SETTINGS:
         # Check if the value set for mode is valid
         assert 0 <= mode <= 4
 
-        filter: dict = dict(
-            OFF=0x00,
-            FILTER2=0x01,
-            FILTER4=0x02,
-            FILTER8=0x03,
-            FILTER16=0x04,
+        filter: tuple = tuple(
+            0x00,  # Filter OFF
+            0x01,  # Filter 2
+            0x02,  # Filter 4
+            0x03,  # Filter 8
+            0x04,  # Filter 16
         )
-        return filter[list(filter.keys())[mode]]
+        return filter[mode]
 
     # Oversampling modes [CHAPTER 3.3]
     def oversamplingMode(self, pressure: int, temperature: int) -> tuple[int]:
@@ -68,23 +68,23 @@ class SETTINGS:
         # Check if the values set for pressure and temperature are valid.
         assert 0 <= pressure <= 5 and 0 <= temperature <= 5 
 
-        p: dict = dict(
-            SKIP=0x00,
-            OSx1=0x01,
-            OSx2=0x02,
-            OSx4=0x03,
-            OSx8=0x04,
-            OSx16=0x05,
+        p: tuple = tuple(
+            0x00,  # No oversampling
+            0x01,  # Oversampling x1
+            0x02,  # Oversampling x2
+            0x03,  # Oversampling x4
+            0x04,  # Oversampling x8
+            0x05,  # Oversampling x16
         )
-        t: dict = dict(
-            SKIP=0x00,
-            OSx1=0x01,
-            OSx2=0x02,
-            OSx4=0x03,
-            OSx8=0x04,
-            OSx16=0x05,
+        t: tuple = tuple(
+            0x00,  # No oversampling
+            0x01,  # Oversampling x1
+            0x02,  # Oversampling x2
+            0x03,  # Oversampling x4
+            0x04,  # Oversampling x8
+            0x05,  # Oversampling x16
         )
-        return p[list(p.keys())[pressure]], t[list(t.keys())[temperature]]
+        return p[pressure], t[temperature]
     
     # Standby settings [CHAPTER 3.6.3]
     def standbyTime(self, time: int) -> int:
@@ -102,14 +102,14 @@ class SETTINGS:
         # Check if the value set for time is valid
         assert 0 <= time <= 7
 
-        standby: dict = dict(
-            _500US=0x00,
-            _62_5MS=0x01,
-            _125MS=0x02,
-            _250MS=0x03,
-            _500MS=0x04,
-            _1S=0x05,
-            _2S=0x06,
-            _4S=0x07,
+        standby: tuple = tuple(
+            0x00,  # Standby time: 500 microseconds
+            0x01,  # Standby time: 62.5 milliseconds
+            0x02,  # Standby time: 125 milliseconds
+            0x03,  # Standby time: 250 milliseconds
+            0x04,  # Standby time: 500 milliseconds
+            0x05,  # Standby time: 1 second
+            0x06,  # Standby time: 2 seconds
+            0x07,  # Standby time: 4 seconds
         )
-        return standby[list(standby.keys())[time]]
+        return standby[time]
