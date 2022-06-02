@@ -150,7 +150,7 @@ class BMP280:
         """
         return self._read(REG.IDENTIFICATION, size=2)
 
-    def fetch(self, /, *, temp: bool=True, pres: bool=True) -> list[int|None]:
+    def fetch(self, temp: bool=True, pres: bool=True) -> list[int|None]:
         """
         Read temperature and/or pressure values from the BMP280.
         The temperature and pressure values can be selected for returning.
@@ -174,7 +174,7 @@ class BMP280:
             ] if value is not None
         ]
 
-    def standby(self, /, *, time: int=None) -> int | None:
+    def standby(self, time: int=None) -> int | None:
         """
         Read/Write function for the standby time.
         
@@ -193,7 +193,7 @@ class BMP280:
         assert 0x00 <= time <= 0x07
         self._write_bits(REG.CONFIG, time, 3, shift=5)
 
-    def iir(self, /, *, mode: int=None) -> int | None:
+    def iir(self, mode: int=None) -> int | None:
         """
         Read/Write function for the Infinite Impulse Response (IIR) settings.
 
@@ -212,7 +212,7 @@ class BMP280:
         assert 0x00 <= mode <= 0x04
         self._write_bits(REG.CONFIG, mode, 3, shift=2)
 
-    def spi(self, /, *, state: bool=None) -> int | None:
+    def spi(self, state: bool=None) -> int | None:
         """
         Read/Write function for the SPI settings.
 
@@ -230,7 +230,7 @@ class BMP280:
         assert isinstance(state, bool)
         self._write_bits(REG.CONFIG, int(state), 1, shift=0)
 
-    def oversampling(self, /, *, pres_temp: tuple=None) -> list[int] | None:
+    def oversampling(self, pres_temp: tuple=None) -> list[int] | None:
         """
         Read/Write function for the oversampling settings.
         This function sets the pressure and temperature oversampling settings
@@ -273,5 +273,5 @@ class BMP280:
         """
         if not mode:
             return self._write_bits(REG.CTRL_MEAS, 2, shift=0)
-        assert 0 <= mode <= 2
+        assert 0x00 <= mode <= 0x03
         self._write_bits(REG.CTRL_MEAS, mode, 2, shift=0)
