@@ -9,18 +9,26 @@ from sensor.registers import COMPENSATION as COMP
 
 
 class BMP280:
-    def __init__(self, i2c: object, address: int, timer_id: int=0) -> None:
+    def __init__(self, i2c: object, address: int,
+                 timer_id: int=0, timer_period: int=25) -> None:
+        """
+        Class BMP280
+
+        The following is needed for initialization:
+        - i2c: This is a `SoftI2C` object
+        - address: The BMP280 address [`0x76`/`0x77`]
+        - timer_id: Timeout timer id [0 to 3]
+        - timer_period: Timeout time in milliseconds
+        """
         self._i2c: object = i2c
         self._addr: int = address
-
         # Variables for the read/write limiter
         self.timer_id = timer_id
+        self.timer_period = timer_period
         self.limiter = True
-
         # Compensation data for temperature and pressure
         self.tC: list = self._compensation(COMP.TEMP)
         self.pC: list = self._compensation(COMP.PRES)
-
         # Variables for handling output
         self.rawT: float = 0.0
         self.fineT: float = 0.0
@@ -32,14 +40,14 @@ class BMP280:
         The function makes sure that the BMP280 cannot be accessed quicker
         than the period time described in the Timer function.
 
-        The current limiter is set at 25 milliseconds (40 Hz).
+        The current limiter is set at 10 milliseconds (100 Hz).
 
         This is not a 'sleep' function. The code will continue unless a quick
         access is desired. Then it will wait until the timer has run out.
         """
         self.limiter: bool = False
         Timer(self.timer_id).init(
-            period=25,
+            period=self.timer_period if self.timer_period >= 10 else 10,
             mode=Timer.ONE_SHOT,
             callback=self._rw_limiter
         )
@@ -51,7 +59,10 @@ class BMP280:
     def _read(self, reg_addr: int, size: int=1) -> bytes:
         while not self.limiter: pass
         self._rw_limiter_init()
-        return self._i2c.readfrom_mem(self._addr, reg_addr, size)
+        try:
+            return self._i2c.readfrom_mem(self._addr, reg_addr, size)
+        except OSError: # If the device is disconnected
+            return [0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
 
     def _read_bits(self, reg_addr: int, length: int, shift: int=0) -> int:
         return self._read(reg_addr)[0] >> shift & int('1' * length, 2)
