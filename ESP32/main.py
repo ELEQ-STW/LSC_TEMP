@@ -77,11 +77,11 @@ class Settings:
         ])
 
 class Data:
-    def __init__(self, sensor: list[object], amount: int=15):
+    def __init__(self, sensor: list[BMP280], amount: int=15):
         self._sum: function = lambda data, num: [
             sum(val[num][pos] for val in data)/len(data) for pos in [0, 1]
         ]
-        self.sensor: list = sensor
+        self.sensor: list[BMP280] = sensor
         self.amount: int = amount
         self.processed: list = []
     
@@ -113,7 +113,7 @@ class Data:
 
 def main(debug: bool=False):
     i2c = Settings()
-    sensor: list[object] = i2c.settings()
+    sensor: list[BMP280] = i2c.settings()
     if debug: print('DEBUG IS ON\n', i2c)
     i2c.bmp280_setup(sensor)
 
