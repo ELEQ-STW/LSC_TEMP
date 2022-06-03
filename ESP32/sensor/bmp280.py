@@ -139,7 +139,7 @@ class BMP280:
         self._write(REG.RESET, 0xB6)
 
 
-    def status(self) -> tuple[bool, bool]:
+    def status(self) -> list[bool]:
         """
         This function fetches the status bits of the BMP280.
         
@@ -149,21 +149,21 @@ class BMP280:
 
         More info? See chapter 4.3.3 of the datasheet.
         """
-        return tuple(
-            self._read_bits(REG.STATUS, 1, shift=0),
-            self._read_bits(REG.STATUS, 1, shift=3),
-        )
+        return [
+            bool(self._read_bits(REG.STATUS, 1, shift=0)),
+            bool(self._read_bits(REG.STATUS, 1, shift=3)),
+        ]
 
-    def chip_id(self) -> bytearray:
+    def chip_id(self) -> int:
         """
         This function returns the Chip ID in bytearray.
         The ID is (according to the datasheet, see chapter 4.3.1)
         always `0x58`. To read out the value as an integer, make sure to
         read out the first value of the list (`[0]`).
         """
-        return self._read(REG.IDENTIFICATION, size=2)
+        return self._read(REG.IDENTIFICATION, size=2)[0]
 
-    def fetch(self, temp: bool=True, pres: bool=True) -> list[int|None]:
+    def fetch(self, temp: bool=True, pres: bool=True) -> list[int | None]:
         """
         Read temperature and/or pressure values from the BMP280.
         The temperature and pressure values can be selected for returning.
@@ -225,7 +225,7 @@ class BMP280:
         assert 0x00 <= mode <= 0x04
         self._write_bits(REG.CONFIG, mode, 3, shift=2)
 
-    def spi(self, state: bool=None) -> int | None:
+    def spi(self, state: bool=None) -> bool | None:
         """
         Read/Write function for the SPI settings.
 
@@ -239,7 +239,7 @@ class BMP280:
         See `ESP32\\sensor\\registers.py` for more information.
         """
         if state is None:
-            return self._read_bits(REG.CONFIG, 1, shift=0)
+            return bool(self._read_bits(REG.CONFIG, 1, shift=0))
         assert isinstance(state, bool)
         self._write_bits(REG.CONFIG, int(state), 1, shift=0)
 
@@ -285,6 +285,6 @@ class BMP280:
         See `ESP32\\sensor\\settings.py` for more information.
         """
         if not mode:
-            return self._write_bits(REG.CTRL_MEAS, 2, shift=0)
+            return self._read_bits(REG.CTRL_MEAS, 2, shift=0)
         assert 0x00 <= mode <= 0x03
         self._write_bits(REG.CTRL_MEAS, mode, 2, shift=0)
