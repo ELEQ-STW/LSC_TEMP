@@ -87,7 +87,7 @@ _The script uses the Python packages [adafruit-ampy](https://pypi.org/project/ad
 ## Revision History
 
 | Release Name | Date       | Pull Request | Type        | Stable |
-| :----------- | :--------: | :----------: | :---:       | :----: |
-| v0.1.0-alpha | **xx-xx**-2022 | [#1][PR1]    | Pre-release | :x:    |
+| :----------- | :--------: | :----------: | :---------: | :----: |
+| v0.1.0       | 03-06-2022 | [#1][PR1]    | Pre-release | :x:    |
 
-[PR1]: ()
+[PR1]: https://github.com/DutchFakeTuber/LSC_TEMP/releases/tag/v0.1.0
