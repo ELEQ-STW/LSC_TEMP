@@ -73,19 +73,19 @@ bmp280_sensor.oversampling(SETTINGS().osMode(int, int))  # Configuring oversampl
 bmp280_sensor.power(SETTINGS().powerMode(int))  # Configuring the power mode of the sensor
 
 """ Reading data from the registers """
-status: tuple[bool, bool] = bmp280_sensor.status()  # Fetch status of the sensor
+status: list[bool] = bmp280_sensor.status()  # Fetch status of the sensor
 chip_id: int = hex(bmp280_sensor.chip_id()[0])  # Fetch the ID of the sensor [0x58]
 standby: int = bmp280_sensor.standby()  # Fetch standby configuration of the sensor
 iir: int = bmp280_sensor.iir()  # Fetch IIR configuration for the measurements
 spi: bool = bool(bmp280_sensor.spi())  # Fetch SPI status of the sensor
-oversampling: list[int, int] = bmp280_sensor.oversampling()  # Fetch oversampling modes for the Pressure and Temperature measurements
+oversampling: list[int] = bmp280_sensor.oversampling()  # Fetch oversampling modes for the Pressure and Temperature measurements
 power: int = bmp280_sensor.power()  # Fetch power mode configuration of the sensor  
 ```
 
 #### Read Measurement Data
 Reading the measurement data is quite simple.
 ``` Python
-data: list[float, float] = bmp280_sensor.fetch()
+data: list[float] = bmp280_sensor.fetch()
 temperature: float = data[0]  # Temperature in degrees Celsius
 pressure: float = data[1]  # Pressure in Pascal [Pa]
 pressure /= 100.0  # Pressure in Hectopascal [hPa]
