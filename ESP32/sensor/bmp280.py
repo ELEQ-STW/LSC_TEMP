@@ -40,8 +40,6 @@ class BMP280:
         The function makes sure that the BMP280 cannot be accessed quicker
         than the period time described in the Timer function.
 
-        The current limiter is set at 10 milliseconds (100 Hz).
-
         This is not a 'sleep' function. The code will continue unless a quick
         access is desired. Then it will wait until the timer has run out.
         """
@@ -52,6 +50,18 @@ class BMP280:
             callback=self._rw_limiter
         )
 
+    def __str__(self) -> str:
+        _str: function = lambda char, pos, val: "{0}{1}: {2},\t{3}{4}".format(
+            char, pos + 1, val, '\t' if len(str(val)) <= 2 else '', type(val))
+        return "\n".join([
+            '\nTemperature Compensation Values:',
+            '#   Value\tType',
+            "\n".join([_str('T', p, v) for p, v in enumerate(self.tC)]),
+            '\nPressure Compensation Values:',
+            '#   Value\tType',
+            "\n".join([_str('P', p, v) for p, v in enumerate(self.pC)]),
+        ])
+    
     def _rw_limiter(self, *args) -> None:
         """ Set the limiter at True (Timer has passed). """
         self.limiter: bool = True
@@ -128,14 +138,6 @@ class BMP280:
         """ This function resets the BMP280. """
         self._write(REG.RESET, 0xB6)
 
-    def print_compensation(self) -> None:
-        printFunc: function = lambda c, num, val: print(
-            f"\t{c}{num+1}: {val}, {type(val)=}"
-        )
-        print('Temperature Compensation Values:')
-        [printFunc('T', pos, temp) for pos, temp in enumerate(self.tC)]
-        print('Pressure Compensation Values:')
-        [printFunc('P', pos, pres) for pos, pres in enumerate(self.pC)]
 
     def status(self) -> tuple[bool, bool]:
         """
