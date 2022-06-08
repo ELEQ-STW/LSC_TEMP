@@ -69,14 +69,14 @@ IF NOT "%COMPORT%" == """" (
 
     SETLOCAL ENABLEDELAYEDEXPANSION
     :: For loop through the directories
-    SET I=0&SET "STR_FOLDERS= BASE SENSOR UMQTT WIRELESS"
+    SET I=0&SET "STR_FOLDERS= BASE SENSOR MQTT WIRELESS HELPERS"
     SET "STR_FOLDERS=%STR_FOLDERS: ="&SET /A I+=1&SET "STR_FOLDERS[!I!]=%"
-    SET I=0&SET "CD_FOLDERS= .\ESP32\ .\sensor\ ..\umqtt\ ..\wireless\"
+    SET I=0&SET "CD_FOLDERS= .\ESP32\ .\sensor\ ..\mqtt\ ..\wireless\ ..\helpers\"
     SET "CD_FOLDERS=%CD_FOLDERS: ="&SET /A I+=1&SET "CD_FOLDERS[!I!]=%"
-    SET I=0&SET "FOLDERS= none sensor umqtt wireless"
+    SET I=0&SET "FOLDERS= none sensor mqtt wireless helpers"
     SET "FOLDERS=%FOLDERS: ="&SET /A I+=1&SET "FOLDERS[!I!]=%"
 
-    FOR /L %%D IN (1,1,4) DO (
+    FOR /L %%D IN (1,1,5) DO (
         ECHO UPLOADING !STR_FOLDERS[%%D]! FILES...
         cd !CD_FOLDERS[%%D]!
         IF %%D == 1 (
@@ -86,7 +86,8 @@ IF NOT "%COMPORT%" == """" (
             FOR %%F IN (*.py) DO ( ampy --port %COMPORT% --baud 115200 --delay 1 put %%F /!FOLDERS[%%D]!/%%F )
         )
     )
-    ECHO DONE You can safely disconnect the ESP32.
+    ECHO DONE
+    ECHO You can safely disconnect the ESP32.
     EXIT
 
 :: Go here if the script is used improperly
