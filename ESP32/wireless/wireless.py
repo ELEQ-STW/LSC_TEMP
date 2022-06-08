@@ -2,7 +2,6 @@
 import machine
 import network
 from time import time
-from time import sleep
 
 
 class WLAN:
