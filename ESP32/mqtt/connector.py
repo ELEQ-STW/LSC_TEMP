@@ -7,6 +7,8 @@ sys.path.reverse()
 IMPORTING THIRD PARTY LIBRARIES:
 # Use REPL on the ESP32 device with the PuTTY-tool and enter the following:
 >>> import upip
+>>> upip.cleanup()
+>>> upip.get_install_path()
 >>> upip.install("micropython-umqtt.simple2")
 >>> upip.install("micropython-umqtt.robust2")
 
