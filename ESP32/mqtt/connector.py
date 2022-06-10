@@ -23,7 +23,7 @@ from umqtt import robust2
 # See simple2 source code: https://www.github.com/fizista/micropython-umqtt.simple2/blob/master/src/umqtt/simple2.py
 # See robust2 source code: https://www.github.com/fizista/micropython-umqtt.robust2/blob/master/src/umqtt/robust2.py
 
-class Connector(robust2.MQTTClient):
+class Connector(robust2.MQTTClient): 
     def __init__(self, *args, **kwargs) -> None:
         """
         Default constructor, initializes MQTTClient object.
@@ -49,6 +49,31 @@ class Connector(robust2.MQTTClient):
         """
         super().__init__(*args, **kwargs)
 
+    def set_config(self, DEBUG: bool=False, KEEP_QOS0: bool=True,
+                   NO_QUEUE_DUPS: bool=True, MSG_QUEUE_MAX: int=5,
+                   CONFIRM_QUEUE_MAX: int=10, RESUBSCRIBE: bool=True) -> None:
+        """
+        This method can be used to set constants in the parent class.
+
+        Available constants for configuration:
+        - DEBUG: `bool`. Enable/Disable debugging
+        - KEEP_QOS0: `bool`. Information whether we store unsent messages \
+            with the flag `QoS==0` in the queue.
+        - NO_QUEUE_DUPS: `bool`. Option, limits the possibility of only one \
+            unique message being queued.
+        - MSG_QUEUE_MAX: `int`. Limit the number of unsent messages in the \
+            queue.
+        - CONFIRM_QUEUE_MAX: `int`. How many PIDs we store for a sent message.
+        - RESUBSCRIBE: `bool`. When you reconnect, all existing \
+            subscriptions are renewed.
+        """
+        self.DEBUG: bool = DEBUG
+        self.KEEP_QOS0: bool = KEEP_QOS0
+        self.NO_QUEUE_DUPS: bool = NO_QUEUE_DUPS
+        self.MSG_QUEUE_MAX: int = MSG_QUEUE_MAX
+        self.CONFIRM_QUEUE_MAX: int = CONFIRM_QUEUE_MAX
+        self.RESUBSCRIBE: bool = RESUBSCRIBE
+        
     def is_keepalive(self) -> bool:
         """
         It checks if the connection is active. If the connection is not \
@@ -60,11 +85,19 @@ class Connector(robust2.MQTTClient):
         """
         return super().is_keepalive()
     
-    def set_callback_status(self, status: int) -> None:
+    def set_callback(self, status: function) -> None:
+        """
+        Set callback for received subscription messages.
+
+        status: `function`. Callable(topic, msg, retained, duplicate)
+        """
+        super().set_callback(status)
+    
+    def set_callback_status(self, status: function) -> None:
         """
         Set the callback for information about whether the sent packet (QoS=1)
         or subscription was received or not by the server.
-        - status: `int`. callable(pid, status). Where:
+        - status: `function`. callable(pid, status). Where:
             - status = `0` - timeout
             - status = `1` - successfully delivered
             - status = `2` - Unknown PID. It is also possible that the \
