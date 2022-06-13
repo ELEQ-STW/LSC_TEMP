@@ -26,12 +26,12 @@ I2C1: dict = dict(sda=Pin(18), scl=Pin(19), freq=100_000)
 I2C2: dict = dict(sda=Pin(22), scl=Pin(23), freq=100_000)
 # The timeout timer for the BMP280. This value is the least time in
 # milliseconds between consecutive measurements on one BMP280 sensor.
-TIMER: int = 50
+TIMER: int = 250
 
 # Configure time by accessing this server
 # Find the server closest to you:
 # https://www.ntppool.org/zone/@
-ntptime.host = "2.nl.pool.ntp.org"
+ntptime.host = "0.nl.pool.ntp.org"
 
 # MQTT Settings
 #   Enter the desired settings here.
@@ -39,10 +39,15 @@ ntptime.host = "2.nl.pool.ntp.org"
 #   See mqtt/connector.py
 MQTT: dict = dict(
     client_id=b'ESP32_TEST',  # ID of this device
-    server=b'192.168.0.103',  # Server IP address
+    server=b'192.168.137.139',  # Server IP address
     port=1883,
+    user=None,
+    password=None,
+    keepalive=0,
     ssl=False,
     ssl_params=None,
+    socket_timeout=0,
+    message_timeout=10,
 )
 MQTT_TOPIC: str = b'ESP32'
 MQTT_QOS: int = 1
@@ -94,7 +99,7 @@ def main(debug: bool = False):
         print('DEBUG IS ON\n', i2c)
 
     # Get data object (contains BMP280 and SoftI2C objects)
-    data: object = Data(sensor, period=500)
+    data: object = Data(sensor, period=5_000)
 
     # Setting up uMQTT robust
     mqtt: object = Connector(**MQTT)
@@ -102,7 +107,12 @@ def main(debug: bool = False):
     # If the current MQTT session is still active on the broker
     if not mqtt.connect(clean_session=False):
         print('Setting up new session...')
-        mqtt.publish(b'ESP32', f'Connecting...', retain=True, qos=1)
+        mqtt.publish(
+            MQTT_TOPIC,
+            bytes('Connecting...', 'utf-8'),
+            retain=MQTT_RETAIN,
+            qos=MQTT_QOS,
+        )
 
     gc.enable()  # Enable garbage collection
     ntptime.settime()  # Set the local time according to `ntptime.host`
