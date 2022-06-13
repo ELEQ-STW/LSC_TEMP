@@ -23,7 +23,8 @@ from umqtt import robust2
 # See simple2 source code: https://www.github.com/fizista/micropython-umqtt.simple2/blob/master/src/umqtt/simple2.py
 # See robust2 source code: https://www.github.com/fizista/micropython-umqtt.robust2/blob/master/src/umqtt/robust2.py
 
-class Connector(robust2.MQTTClient): 
+
+class Connector(robust2.MQTTClient):
     def __init__(self, *args, **kwargs) -> None:
         """
         Default constructor, initializes MQTTClient object.
@@ -48,10 +49,16 @@ class Connector(robust2.MQTTClient):
                 subscription has not been received by the server.
         """
         super().__init__(*args, **kwargs)
+        # Set the parent class' constants in the current class
+        self.set_config()
 
-    def set_config(self, DEBUG: bool=False, KEEP_QOS0: bool=True,
-                   NO_QUEUE_DUPS: bool=True, MSG_QUEUE_MAX: int=5,
-                   CONFIRM_QUEUE_MAX: int=10, RESUBSCRIBE: bool=True) -> None:
+    def set_config(self,
+                   DEBUG: bool = False,
+                   KEEP_QOS0: bool = True,
+                   NO_QUEUE_DUPS: bool = True,
+                   MSG_QUEUE_MAX: int = 5,
+                   CONFIRM_QUEUE_MAX: int = 10,
+                   RESUBSCRIBE: bool = True) -> None:
         """
         This method can be used to set constants in the parent class.
 
@@ -73,18 +80,18 @@ class Connector(robust2.MQTTClient):
         self.MSG_QUEUE_MAX: int = MSG_QUEUE_MAX
         self.CONFIRM_QUEUE_MAX: int = CONFIRM_QUEUE_MAX
         self.RESUBSCRIBE: bool = RESUBSCRIBE
-        
+
     def is_keepalive(self) -> bool:
         """
         It checks if the connection is active. If the connection is not \
             active at the specified time,
         saves an error message and returns False.
-        
+
         returns: `bool`. If the connection is not active at the specified \
             time returns False otherwise True.
         """
         return super().is_keepalive()
-    
+
     def set_callback(self, status: function) -> None:
         """
         Set callback for received subscription messages.
@@ -92,7 +99,7 @@ class Connector(robust2.MQTTClient):
         status: `function`. Callable(topic, msg, retained, duplicate)
         """
         super().set_callback(status)
-    
+
     def set_callback_status(self, status: function) -> None:
         """
         Set the callback for information about whether the sent packet (QoS=1)
@@ -112,8 +119,8 @@ class Connector(robust2.MQTTClient):
         - stat == 1 or 2 - the message is removed from the queue.
         """
         super().cbstat(pid, stat)
-    
-    def connect(self, clean_session: bool=True) -> bool:
+
+    def connect(self, clean_session: bool = True) -> bool:
         """
         Establishes connection with the MQTT server.
         If `clean_session==True`, then the queues are cleared.
@@ -125,10 +132,10 @@ class Connector(robust2.MQTTClient):
         Connection problems are captured and handled by `is_conn_issue()`
         """
         return super().connect(clean_session)
-    
+
     def log(self) -> None:
         super().log()
-    
+
     def reconnect(self) -> bool | None:
         """
         The function tries to resume the connection.
@@ -136,14 +143,14 @@ class Connector(robust2.MQTTClient):
         Connection problems are captured and handled by `is_conn_issue()`
         """
         return super().reconnect()
-    
+
     def resubscribe(self) -> None:
         """
         Function from previously registered subscriptions, sends them again \
             to the server.
         """
         super().resubscribe()
-    
+
     def add_msg_to_send(self, data: bytes) -> None:
         """
         By overwriting this method, you can control the amount of stored \
@@ -157,21 +164,21 @@ class Connector(robust2.MQTTClient):
             with messages awaiting confirmation.
         """
         super().add_msg_to_send(data)
-    
+
     def disconnect(self) -> None:
         """
         Disconnects from the MQTT server.
         """
         return super().disconnect()
-    
+
     def ping(self) -> None:
         """
         Pings the MQTT server.
         """
         super().ping()
-    
-    def publish(self, topic: bytes, msg: bytes, retain: bool=False,
-                qos: int=0) -> None | int:
+
+    def publish(self, topic: bytes, msg: bytes, retain: bool = False,
+                qos: int = 0) -> None | int:
         """
         Publishes a message to a specified topic.
         - arguments:
@@ -185,7 +192,7 @@ class Connector(robust2.MQTTClient):
         - returns:
             - None or PID for QoS==1 (only if the message is sent \
             immediately, otherwise it returns None)
-        
+
         The function tries to send a message. If it fails, the message goes \
             to the message queue for sending.
         When we have messages with the retain flag set, only one last \
@@ -194,9 +201,9 @@ class Connector(robust2.MQTTClient):
         """
         assert 0 <= qos <= 1, "QoS level 2 is not supported. Choose 1 or 0."
         return super().publish(topic, msg, retain, qos)
-    
-    def subscribe(self, topic: bytes, qos: int=0,
-                  resubscribe: bool=True) -> int:
+
+    def subscribe(self, topic: bytes, qos: int = 0,
+                  resubscribe: bool = True) -> int:
         """
         Subscribes to a given topic.
         - arguments:
@@ -213,7 +220,7 @@ class Connector(robust2.MQTTClient):
         """
         assert 0 <= qos <= 1, "QoS level 2 is not supported. Choose 1 or 0."
         return super().subscribe(topic, qos, resubscribe)
-    
+
     def send_queue(self) -> bool:
         """
         The function tries to send all messages and subscribe to all topics \
@@ -221,7 +228,7 @@ class Connector(robust2.MQTTClient):
         - returns: `bool`. True if the queue's empty.
         """
         return super().send_queue()
-    
+
     def is_conn_issue(self):
         """
         With this function we can check if there is any connection problem.
@@ -243,7 +250,7 @@ class Connector(robust2.MQTTClient):
         - returns: `bool`. Connection problem
         """
         return super().is_conn_issue()
-    
+
     def check_msg(self) -> None:
         """
         Checks whether a pending message from server is available.
@@ -257,11 +264,11 @@ class Connector(robust2.MQTTClient):
             set by the `set_callback` method.
         - reply from the server that he received a `QoS=1` message or \
             subscribed to a topic
-        
+
         returns: None
         """
         return super().check_msg()
-    
+
     def wait_msg(self) -> None:
         """
         This method waits for a message from the server.

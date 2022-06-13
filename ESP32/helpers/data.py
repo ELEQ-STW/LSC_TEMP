@@ -4,12 +4,13 @@ from time import time_ns
 # Local modules and variables
 from sensor import BMP280  # Only used for typing
 
+
 class Data:
     def __init__(self,
                  sensor: list[BMP280],
-                 samples: int=None,
-                 period: int=None
-                ) -> None:
+                 samples: int = None,
+                 period: int = None
+                 ) -> None:
         """
         # The Data class is used to fetch BMP280 sensor data.
         - ### arguments:
@@ -28,11 +29,11 @@ class Data:
                 depends on the `timer_period` setting in `BMP280`. \
                 It is recommended to increase the `timer_period` if the \
                 `period` is set `1_000 < period`. \
-        
+
 
         #### The amount of data points taken is capped at 50. This is to \
         limit the storage space taken by the data.
-        
+
         #### Example::
 
             # Get 25 data points in approx. 25*`timer_period`.
@@ -54,7 +55,7 @@ class Data:
         self.samples: int = samples
         self.period: int = period if samples is None else None
         self.processed: list = []
-    
+
     def _fetch(self) -> None:
         """
         Fetch function.
@@ -65,7 +66,8 @@ class Data:
             measurements set in `BMP280`.
         """
         if isinstance(self.samples, int):
-            if self.samples > 50: self.samples: int = 50
+            if self.samples > 50:
+                self.samples: int = 50
             self.data: list = [
                 [s.fetch() for s in self.sensor]
                 for _ in range(self.samples)
@@ -75,13 +77,14 @@ class Data:
             _time = time_ns()
             while time_ns() - _time <= self.period * 1e6:
                 self.data.append([s.fetch() for s in self.sensor])
-                if len(self.data) >= 50: break
-    
+                if len(self.data) >= 50:
+                    break
+
     def get(self) -> list:
         """
         Get function. This function fetches data using `self._fetch()` and \
         averages the measurement data before returning.
-        
+
         Returns: `list[list]`.
         - Format: `BMP280[DATA[temperature, pressure]]`
             - temperature in \u00b0C

@@ -5,13 +5,13 @@ from time import time
 
 
 class WLAN:
-    def __init__(self, ssid: str, pwd: str, timeout: int=10) -> None:
+    def __init__(self, ssid: str, pwd: str, timeout: int = 10) -> None:
         self.SSID: str = ssid
         self.PWD: str = pwd
         self.timeout: int = timeout
         self.wlan: object = network.WLAN(network.STA_IF)
 
-    def active(self, state: bool=None) -> None | bool:
+    def active(self, state: bool = None) -> None | bool:
         """
         This method can be used to activate the networking module.
         It also can be used to fetch the current state of the module.
@@ -28,25 +28,25 @@ class WLAN:
         if state is None:
             return self.wlan.active()
         self.wlan.active(state)
-    
+
     def scan(self) -> list:
         return self.wlan.scan()
-    
+
     def config(self) -> bytes:
         return self.wlan.config('mac')
-    
+
     def isConnected(self) -> bool:
         return self.wlan.isconnected()
-    
+
     def ifconfig(self) -> dict:
         return {
             param: value for param, value in
             zip(['IP', 'SUBNET', 'GATEWAY', 'DNS'], self.wlan.ifconfig())
         }
-    
+
     def disconnect(self) -> None:
         self.wlan.disconnect()
-    
+
     def status(self) -> int:
         return self.wlan.status()
 
