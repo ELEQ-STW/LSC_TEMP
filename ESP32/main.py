@@ -2,6 +2,7 @@
 import time
 import ntptime
 import gc
+import json
 from machine import Pin
 
 # Local modules and variables
@@ -28,16 +29,60 @@ I2C2: dict = dict(sda=Pin(22), scl=Pin(23), freq=100_000)
 TIMER: int = 50
 
 # Configure time by accessing this server
-ntptime.host = "0.nl.pool.ntp.org"
+# Find the server closest to you:
+# https://www.ntppool.org/zone/@
+ntptime.host = "2.nl.pool.ntp.org"
+
+# MQTT Settings
+#   Enter the desired settings here.
+#   More information of the settings?
+#   See mqtt/connector.py
+MQTT: dict = dict(
+    client_id=b'ESP32_TEST',  # ID of this device
+    server=b'192.168.0.103',  # Server IP address
+    port=1883,
+    ssl=False,
+    ssl_params=None,
+)
+MQTT_TOPIC: str = b'ESP32'
+MQTT_QOS: int = 1
+MQTT_RETAIN: bool = True
+
 
 def callback(topic, status) -> None:
     print(f"{topic=}, {status=}")
 
-def main(debug: bool=False):
-    gc.enable()  # Enable garbage collection
+
+def convert_to_json(time: str,
+                    measurements: list,
+                    debug: bool = False) -> str:
+    sensors: list = [
+        [pos, meas]
+        for pos, meas in zip(['A1', 'A2', 'B1', 'B2'], measurements)
+    ]
+    string: str = json.dumps(
+        {
+            'time': " ".join([
+                f"{time[0]}-{time[1]:02d}-{time[2]:02d}",
+                f"{time[3] + 2:02d}:{time[4]:02d}:{time[5]:02d}"
+            ]),
+            'measurements': {
+                f'{pos}': vals
+                for pos, vals in sensors
+            }
+        },
+        separators=(',', ':'),
+    )
+    if debug:
+        print(string)
+
+    return string
+
+
+def main(debug: bool = False):
+    # Setting up the BMP280 sensors
     i2c = Settings(esp32=ESP32, i2c1=I2C1, i2c2=I2C2, timer_period=TIMER)
     sensor: list[BMP280] = i2c.settings()
-    if debug: print('DEBUG IS ON\n', i2c)
     i2c.bmp280_setup(
         sensor,
         power=S().powerMode(2),
@@ -45,51 +90,44 @@ def main(debug: bool=False):
         spi=False,
         os=S().osMode(2, 4),
     )
-    
+    if debug:
+        print('DEBUG IS ON\n', i2c)
+
+    # Get data object (contains BMP280 and SoftI2C objects)
     data: object = Data(sensor, period=500)
 
-    mqtt = Connector(
-        b'ESP32_TEST',
-        b'10.10.3.39',
-        port=1883,
-        keepalive=30,
-        message_timeout=60,
-    )
+    # Setting up uMQTT robust
+    mqtt: object = Connector(**MQTT)
     mqtt.set_callback_status(callback)
-    mqtt.set_config(
-        DEBUG=False,
-        KEEP_QOS0=False,
-        NO_QUEUE_DUPS=True,
-        MSG_QUEUE_MAX=5,
-        CONFIRM_QUEUE_MAX=10,
-        RESUBSCRIBE=True,
-    )
+    # If the current MQTT session is still active on the broker
     if not mqtt.connect(clean_session=False):
         print('Setting up new session...')
         mqtt.publish(b'ESP32', f'Connecting...', retain=True, qos=1)
 
-    ntptime.settime()
+    gc.enable()  # Enable garbage collection
+    ntptime.settime()  # Set the local time according to `ntptime.host`
     while True:
-        gc.collect()
-        measurement = data.get()
-
+        # Get measurement data from all the sensors
+        measurement: list = data.get()
+        # Make sure MQTT is still connected to the broker
         if mqtt.is_conn_issue():
-            while mqtt.is_conn_issue(): mqtt.reconnect()
-            else: mqtt.resubscribe()
+            while mqtt.is_conn_issue():
+                mqtt.reconnect()
+            else:
+                mqtt.resubscribe()
 
-        _time: function = lambda t: " ".join([
-            f"{t[0]}-{t[1]:02d}-{t[2]:02d}",
-            f"{t[3]:02d}:{t[4]:02d}:{t[5]:02d}"
-        ])
-        print(_time(time.localtime()), measurement)
-
+        # Publish measurements
         mqtt.publish(
-            b'ESP32',
-            bytes(f"{measurement + [_time(time.localtime())]}", 'utf-8'),
-            retain=True,
-            qos=1,
+            MQTT_TOPIC,
+            bytes(convert_to_json(
+                time.localtime(), measurement, debug=debug), 'utf-8'),
+            retain=MQTT_RETAIN,
+            qos=MQTT_QOS,
         )
+        # Check if message has arrived. This is to ensure the memory does
+        # not overload. Overload of memory only applies to QoS 1
         mqtt.check_msg()
+
 
 if __name__ == '__main__':
     main(debug=ESP32["DEBUG"])
