@@ -46,7 +46,7 @@ Before you start with the setup, make sure you have all the components mentioned
 #### Flashing and Setup
 The ESP32 can be flashed and set up with the `install.bat` tool. This script is specifically written to automate the flashing and setup process.
 
-Before the files can be uploaded to the ESP32, make sure that the WLAN configuration settings are filled in. This is done by editing the [settings.py](/ESP32/wireless/settings.py) file:
+Before the files can be uploaded to the ESP32, make sure that the WLAN configuration settings are filled in. This is done by editing the [settings.py][ESPTOOL] file:
 
 ``` Python
 SSID: str = ''  # <- ADD SSID OF THE DESIRED NETWORK HERE
@@ -76,7 +76,7 @@ _Make sure that you are in the same directory as the `install.bat` file. You can
 
 The script should install the Micropython binaries and put the local files in the filesystem.
 
-_The script uses the Python packages [adafruit-ampy](https://pypi.org/project/adafruit-ampy/) and [esptool](https://docs.espressif.com/projects/esptool/en/latest/esp32/). Click on the links to see more information about the packages._
+_The script uses the Python packages [adafruit-ampy][AMPY] and [esptool](https://docs.espressif.com/projects/esptool/en/latest/esp32/). Click on the links to see more information about the packages._
 
 Before the ESP32 device can be used, the third-party libaries umqtt.simple2 and umqtt.robust2 need to be installed.
 First of all, download and install the following tool: [PuTTY][PuTTY].
@@ -137,6 +137,17 @@ MQTT_RETAIN: bool = True  # Tell the broker to retain the last message or not.
                           # Can be used to debug quicker.
 ```
 
+The ESP32 does not receive the updated code automatically.
+The user has to upload the code. This can be done using the `install.bat` file. Simply write the following line: `.\install --port COMx --setup`.
+
+There is also a quicker way.
+``` Powershell
+cd ./ESP32
+ampy --port COMx --baud 115200 --delay 1 put main.py
+```
+__When inserting the new files, make sure the PuTTY program is not connected to the ESP32. Otherwise the install file (and ampy) cannot write files to the ESP32 device.__
+
+
 ## Revision History
 
 | Release Name | Date       | Pull Request | Type        | Stable |
@@ -150,5 +161,7 @@ MQTT_RETAIN: bool = True  # Tell the broker to retain the last message or not.
 [ESP32-LINK5]: https://www.conrad.nl/nl/p/mean-well-hdr-15-5-din-rail-netvoeding-5-v-dc-2-4-a-12-w-1-x-1894091.html
 [ESP32-LINK6]: https://www.digikey.nl/nl/products/detail/linx-technologies-inc/ANT-W63-WRT-SMA/15622872
 [ESP32-LINK7]: https://www.conrad.nl/nl/p/renkforce-jkff403-jumper-kabel-arduino-banana-pi-raspberry-pi-40x-draadbrug-bus-40x-draadbrug-bus-30-00-cm-bont-2299845.html
+[AMPY]: https://pypi.org/project/adafruit-ampy/
+[ESPTOOL]:/ESP32/wireless/settings.py
 [PuTTY]: https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html
 [PR1]: https://github.com/DutchFakeTuber/LSC_TEMP/releases/tag/v0.1.0
