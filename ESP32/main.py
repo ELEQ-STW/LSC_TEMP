@@ -43,11 +43,11 @@ MQTT: dict = dict(
     port=1883,
     user=None,
     password=None,
-    keepalive=0,
+    keepalive=5,
     ssl=False,
     ssl_params=None,
-    socket_timeout=0,
-    message_timeout=10,
+    socket_timeout=3,
+    message_timeout=30,
 )
 MQTT_TOPIC: str = b'ESP32'
 MQTT_QOS: int = 1
