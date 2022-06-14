@@ -66,7 +66,7 @@ class SETTINGS:
             - OS x16: `int 5`
         '''
         # Check if the values set for pressure and temperature are valid.
-        assert 0 <= pressure <= 5 and 0 <= temperature <= 5 
+        assert 0 <= pressure <= 5 and 0 <= temperature <= 5
 
         p: tuple = tuple([
             0x00,  # No oversampling
@@ -85,7 +85,7 @@ class SETTINGS:
             0x05,  # Oversampling x16
         ])
         return p[pressure], t[temperature]
-    
+
     # Standby settings [CHAPTER 3.6.3]
     def standbyTime(self, time: int) -> int:
         '''

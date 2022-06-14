@@ -16,6 +16,7 @@ MADE BY: Sybrand van Loenen
 # Local modules and variables
 # None
 
+
 class REGISTERS:
     '''
     REGISTERS:
@@ -54,6 +55,8 @@ class REGISTERS:
     CONFIG: int = 0xF5           # CHAPTER 4.3.5
 
 # Pressure registers [CHAPTER 4.3.6]
+
+
 class PRESSURE:
     '''
     REGISTERS:
@@ -70,6 +73,8 @@ class PRESSURE:
     XLSB: int = 0xF9
 
 # Temperature registers [CHAPTER 4.3.7]
+
+
 class TEMPERATURE:
     '''
     REGISTERS:
@@ -86,6 +91,8 @@ class TEMPERATURE:
     XLSB: int = 0xFC
 
 # Compensation registers [CHAPTER 3.11]
+
+
 class COMPENSATION:
     '''
     The values in the compensation registers are used to get the

@@ -1,13 +1,16 @@
 # Standard micropython libraries
-import machine
-from machine import SoftI2C, Pin
-from time import time_ns
+import time
+import ntptime
+import gc
+import json
+from machine import Pin
 
 # Local modules and variables
+from helpers import Data
+from helpers import Settings
 from sensor import BMP280
 from sensor import SETTINGS as S
-from umqtt import MQTTClient
-from wireless import WLAN, SSID, PASSWORD
+from mqtt import Connector
 
 # General settings for the ESP32
 ESP32: dict = dict(
@@ -19,107 +22,122 @@ ESP32: dict = dict(
 #   sda:  Data Pin  -> Data communication line
 #   scl:  Clock Pin -> Clock line
 #   freq: Baudrate  -> Communication speed in Hz
-I2C1: dict = dict(scl=Pin(19), sda=Pin(18), freq=100_000)
-I2C2: dict = dict(scl=Pin(23), sda=Pin(22), freq=100_000)
+I2C1: dict = dict(sda=Pin(18), scl=Pin(19), freq=100_000)
+I2C2: dict = dict(sda=Pin(22), scl=Pin(23), freq=100_000)
+# The timeout timer for the BMP280. This value is the least time in
+# milliseconds between consecutive measurements on one BMP280 sensor.
+TIMER: int = 250
+
+# Configure time by accessing this server
+# Find the server closest to you:
+# https://www.ntppool.org/zone/@
+ntptime.host = "0.nl.pool.ntp.org"
+
+# MQTT Settings
+#   Enter the desired settings here.
+#   More information of the settings?
+#   See mqtt/connector.py
+MQTT: dict = dict(
+    client_id=b'ESP32_TEST',  # ID of this device
+    server=b'192.168.137.139',  # Server IP address
+    port=1883,
+    user=None,
+    password=None,
+    keepalive=5,
+    ssl=False,
+    ssl_params=None,
+    socket_timeout=3,
+    message_timeout=30,
+)
+MQTT_TOPIC: str = b'ESP32'
+MQTT_QOS: int = 1
+MQTT_RETAIN: bool = True
 
 
-class Settings:
-    def __init__(self, i2c1: dict=I2C1, i2c2: dict=I2C2) -> None:
-        self.i2c_A: object = SoftI2C(**i2c1) # I2C bus setup
-        self.i2c_B: object = SoftI2C(**i2c2)
-    
-    def _esp32(self, esp32: dict=ESP32) -> None:
-        """ General configuration of the device. """
-        self.red_freq: int = 240_000_000
-        machine.freq(esp32['FREQ'])
-        self.red_freq -= machine.freq()
-    
-    def _wireless(self) -> None:
-        """ Connecting device to internet """
-        self.internet = WLAN(SSID, PASSWORD)
-        self.internet.connect()
-    
-    def _sensor(self) -> None:
-        self.sensor_A1: object = BMP280(self.i2c_A, 0x76, timer_id=0)
-        self.sensor_A2: object = BMP280(self.i2c_A, 0x77, timer_id=1)
-        # self.sensor_B1: object = BMP280(self.i2c_B, 0x76, timer_id=2)
-        # self.sensor_B2: object = BMP280(self.i2c_B, 0x77, timer_id=3)
-
-    def bmp280_setup(self, sensor: list) -> None:
-        for s in sensor:
-            s.power(mode=S().powerMode(2))
-            s.iir(mode=S().iirMode(3))
-            s.spi(state=False)
-            s.oversampling(pres_temp=S().osMode(2, 4))
-        
-    def settings(self) -> dict[object]:
-        self._esp32()
-        self._wireless()
-        self._sensor()
-        return [
-            self.sensor_A1, self.sensor_A2,
-            # self.sensor_B1, self.sensor_B2
-        ]
-    
-    def __str__(self) -> str:
-        _scan: function = lambda val: list(map(hex, val.scan()))
-        return "\n".join([
-            f"\nESP32 FREQUENCY:",
-            f"\tORIGINAL:   {(self.red_freq + machine.freq())/1e6} MHz",
-            f"\tREDUCED TO: {machine.freq()/1e6} MHz",
-            f"\tDIFFERENCE: {self.red_freq/1e6} MHz",
-            f"\nWLAN:",
-            "\n".join(f"\t{k}: {v}" for k, v in self.internet.ifconfig().items()),
-            f"\nI2C:",
-            f"\tBUSES:          {[self.i2c_A, self.i2c_B]}",
-            f"\tAVAILABLE ADDR: {[_scan(self.i2c_A), _scan(self.i2c_B)]}",
-            f"\n",
-        ])
-
-class Data:
-    def __init__(self, sensor: list[object], amount: int=15):
-        self._sum: function = lambda data, num: [
-            sum(val[num][pos] for val in data)/len(data) for pos in [0, 1]
-        ]
-        self.sensor: list = sensor
-        self.amount: int = amount
-        self.processed: list = []
-    
-    def _fetch(self) -> None:
-        self.data: list = [
-            [s.fetch() for s in self.sensor]
-            for _ in range(self.amount)
-        ]
-    
-    def get(self) -> list:
-        self._fetch()
-        self.processed: list = [
-            self._sum(self.data, num)
-            for num in range(len(self.data[0]))
-        ]
-        return self.processed
-
-    def __str__(self) -> str:
-        if self.processed == []:
-            _ = self.get()
-        return "\n".join([
-            f"""{sensor._i2c} [{hex(sensor._addr)}]
-            Temperature: {self.processed[num][0]} \u00b0C
-            Pressure:    {self.processed[num][1]/100.0} hPa
-            """
-            for num, sensor in enumerate(self.sensor)
-        ])
+def callback(topic, status) -> None:
+    print(f"{topic=}, {status=}")
 
 
-def main(debug: bool=False):
-    i2c = Settings()
-    sensor: list[object] = i2c.settings()
-    if debug: print('DEBUG IS ON\n', i2c)
-    i2c.bmp280_setup(sensor)
+def convert_to_json(time: str,
+                    measurements: list,
+                    debug: bool = False) -> str:
+    sensors: list = [
+        [pos, meas]
+        for pos, meas in zip(['A1', 'A2', 'B1', 'B2'], measurements)
+    ]
+    string: str = json.dumps(
+        {
+            'time': " ".join([
+                f"{time[0]}-{time[1]:02d}-{time[2]:02d}",
+                f"{time[3] + 2:02d}:{time[4]:02d}:{time[5]:02d}"
+            ]),
+            'measurements': {
+                f'{pos}': vals
+                for pos, vals in sensors
+            }
+        },
+        separators=(',', ':'),
+    )
+    if debug:
+        print(string)
 
-    data: object = Data(sensor, amount=15)
-    _ = data.get()
-    print(data)
+    return string
+
+
+def main(debug: bool = False):
+    # Setting up the BMP280 sensors
+    i2c = Settings(esp32=ESP32, i2c1=I2C1, i2c2=I2C2, timer_period=TIMER)
+    sensor: list[BMP280] = i2c.settings()
+    i2c.bmp280_setup(
+        sensor,
+        power=S().powerMode(2),
+        iir=S().iirMode(3),
+        spi=False,
+        os=S().osMode(2, 4),
+    )
+    if debug:
+        print('DEBUG IS ON\n', i2c)
+
+    # Get data object (contains BMP280 and SoftI2C objects)
+    data: object = Data(sensor, period=5_000)
+
+    # Setting up uMQTT robust
+    mqtt: object = Connector(**MQTT)
+    mqtt.set_callback_status(callback)
+    # If the current MQTT session is still active on the broker
+    if not mqtt.connect(clean_session=False):
+        print('Setting up new session...')
+        mqtt.publish(
+            MQTT_TOPIC,
+            bytes('Connecting...', 'utf-8'),
+            retain=MQTT_RETAIN,
+            qos=MQTT_QOS,
+        )
+
+    gc.enable()  # Enable garbage collection
+    ntptime.settime()  # Set the local time according to `ntptime.host`
+    while True:
+        # Get measurement data from all the sensors
+        measurement: list = data.get()
+        # Make sure MQTT is still connected to the broker
+        if mqtt.is_conn_issue():
+            while mqtt.is_conn_issue():
+                mqtt.reconnect()
+            else:
+                mqtt.resubscribe()
+
+        # Publish measurements
+        mqtt.publish(
+            MQTT_TOPIC,
+            bytes(convert_to_json(
+                time.localtime(), measurement, debug=debug), 'utf-8'),
+            retain=MQTT_RETAIN,
+            qos=MQTT_QOS,
+        )
+        # Check if message has arrived. This is to ensure the memory does
+        # not overload. Overload of memory only applies to QoS 1
+        mqtt.check_msg()
+
 
 if __name__ == '__main__':
     main(debug=ESP32["DEBUG"])

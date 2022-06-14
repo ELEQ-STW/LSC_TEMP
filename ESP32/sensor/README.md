@@ -13,7 +13,11 @@ This library is inspired by the work of [dafvid (GitHub)](https://github.com/daf
     2. [Register File](#register-file)
     3. [Settings File](#settings-file)
     4. [BMP280 Control File](#bmp280-control-file)
-3. [Revision History](#revision-history)
+3. [Compensation Formulae](#compensation-formulae)
+    1. [Fine Temperature](#fine-temperature)
+    2. [Temperature](#temperature)
+    3. [Pressure](#pressure)
+4. [Revision History](#revision-history)
 
 ## Usage
 This library can be used as follows:
@@ -73,19 +77,19 @@ bmp280_sensor.oversampling(SETTINGS().osMode(int, int))  # Configuring oversampl
 bmp280_sensor.power(SETTINGS().powerMode(int))  # Configuring the power mode of the sensor
 
 """ Reading data from the registers """
-status: tuple[bool, bool] = bmp280_sensor.status()  # Fetch status of the sensor
+status: list[bool] = bmp280_sensor.status()  # Fetch status of the sensor
 chip_id: int = hex(bmp280_sensor.chip_id()[0])  # Fetch the ID of the sensor [0x58]
 standby: int = bmp280_sensor.standby()  # Fetch standby configuration of the sensor
 iir: int = bmp280_sensor.iir()  # Fetch IIR configuration for the measurements
 spi: bool = bool(bmp280_sensor.spi())  # Fetch SPI status of the sensor
-oversampling: list[int, int] = bmp280_sensor.oversampling()  # Fetch oversampling modes for the Pressure and Temperature measurements
+oversampling: list[int] = bmp280_sensor.oversampling()  # Fetch oversampling modes for the Pressure and Temperature measurements
 power: int = bmp280_sensor.power()  # Fetch power mode configuration of the sensor  
 ```
 
 #### Read Measurement Data
 Reading the measurement data is quite simple.
 ``` Python
-data: list[float, float] = bmp280_sensor.fetch()
+data: list[float] = bmp280_sensor.fetch()
 temperature: float = data[0]  # Temperature in degrees Celsius
 pressure: float = data[1]  # Pressure in Pascal [Pa]
 pressure /= 100.0  # Pressure in Hectopascal [hPa]
@@ -147,6 +151,44 @@ The BMP280 Control file, otherwise known as `bmp280.py`, is used to set and read
 
 The file is currently tested with the [I<sup>2</sup>C](https://en.wikipedia.org/wiki/I%C2%B2C) communication protocol, SPI can be broken. __Use SPI with precaution!__
 
+## Compensation Formulae
+There are a few formulae used in the code.
+- Fine temperature
+- Temperature
+- Pressure
+
+The formulae are shown below in KaTeX and Python code.
+
+### Fine Temperature
+$$\large{T_{fine} = \left(\frac{T_{raw}}{2^{14}} - \frac{C_{T1}}{2^{10}}\right) \bullet C_{T2} + \left(\frac{T_{raw}}{2^{17}} - \frac{C_{T1}}{2^{13}}\right)^2 \bullet C_{T3}}$$
+_NOTE:_ $ C=Compensation $
+``` Python
+Tfine: float = ((Traw / 2.0**14.0 - Ct1 / 2.0**10.0) * Ct2 + ((Traw / 2.0**17.0 - Ct1 / 2.0**13.0)**2.0) * Ct3)
+```
+
+### Temperature
+$$\large{T = \frac{T_{fine}}{2^9 \bullet 10}}$$
+``` Python
+T: float = Tfine / ((2.0**9.0) * 2.0)
+```
+
+### Pressure
+The Pressure formula is pretty long, it is split up in three parts for readability.
+$$\large{P_1 = 1+\frac{\left(C_{P3}\bullet\frac{\left(\frac{T_{fine}}{2}-64\bullet10^3\right)^2}{2^{19}}+C_{P2}\bullet\left(\frac{T_{fine}}{2}-64\bullet10^3\right)\right)}{\frac{2^{19}}{2^{15}}}\bullet C_{P1}}$$
+$$\large{P_2 = \frac{\left(\frac{T_{fine}}{2}-64\bullet10^3\right)^2\bullet\frac{C_{P6}}{2^{15}}+\left(\frac{T_{fine}}{2}-64\bullet10^3\right)\bullet C_{P5}\bullet2}{4}+C_{P4}\bullet2^{16}}$$
+$$\large{P = \begin{cases} 0 &\text{if }P_1\text{ or }P_2 = 0 \newline &\text{else }\large{\frac{C_{P9}\bullet \frac{\left(\left(2^{20}-P_{raw}\right)-\frac{P_2}{2^{12}}\bullet5^4\bullet\frac{10}{P_1}\right)^2}{2^{31}}+\left(\left(2^{20}-P_{raw}\right)-\frac{P_2}{2^{12}}\bullet5^4\bullet\frac{10}{P_1}\right)\bullet\frac{C_{P8}}{2^{15}}+C_{P7}}{2^4}}\end{cases}}$$
+_NOTE:_ $ C=Compensation $
+``` Python
+var1: float = (1.0 + (Cp3 * (Tfine / 2.0 - 64e3)**2.0 / 2.0**19.0 + Cp2 * (Tfine / 2.0 - 64e3)) / 2.0**19.0 / 2.0**15.0) * Cp1
+var2: float = ((((Tfine / 2.0 - 64e3)**2.0 * Cp6 / 2.0**15.0) + (Tfine / 2.0 - 64e3) * Cp5 * 2.0) / 4.0) + (Cp4 * 2.0**16.0)
+try: # In case there is a division by 0
+    P: float = ((2.0**20.0 - Praw) - (var2 / 2.0**12.0)) * (5.0**4.0)*10.0 / var1
+    P += ((Cp9 * P**2.0 / 2.0**31.0) + (P * Cp8 / 2.0**15.0) + Cp7) / 2.0**4.0
+except:
+    P: float = 0.0
+finally:
+    return P
+```
 
 ## Revision History
 | Release Name | Changed By      | Date       | Commit(s)      |

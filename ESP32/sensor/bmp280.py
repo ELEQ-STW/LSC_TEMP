@@ -10,7 +10,7 @@ from sensor.registers import COMPENSATION as COMP
 
 class BMP280:
     def __init__(self, i2c: object, address: int,
-                 timer_id: int=0, timer_period: int=25) -> None:
+                 timer_id: int = 0, timer_period: int = 25) -> None:
         """
         Class BMP280
 
@@ -61,31 +61,33 @@ class BMP280:
             '#   Value\tType',
             "\n".join([_str('P', p, v) for p, v in enumerate(self.pC)]),
         ])
-    
+
     def _rw_limiter(self, *args) -> None:
         """ Set the limiter at True (Timer has passed). """
         self.limiter: bool = True
 
-    def _read(self, reg_addr: int, size: int=1) -> bytes:
-        while not self.limiter: pass
+    def _read(self, reg_addr: int, size: int = 1) -> bytes:
+        while not self.limiter:
+            pass
         self._rw_limiter_init()
         try:
             return self._i2c.readfrom_mem(self._addr, reg_addr, size)
-        except OSError: # If the device is disconnected
+        except OSError:  # If the device is disconnected
             return [0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
 
-    def _read_bits(self, reg_addr: int, length: int, shift: int=0) -> int:
+    def _read_bits(self, reg_addr: int, length: int, shift: int = 0) -> int:
         return self._read(reg_addr)[0] >> shift & int('1' * length, 2)
 
     def _write(self, reg_addr: int, data: bytearray) -> None:
         if not isinstance(data, bytearray):
             data: bytearray = bytearray([data])
-        while not self.limiter: pass
+        while not self.limiter:
+            pass
         self._rw_limiter_init()
         self._i2c.writeto_mem(self._addr, reg_addr, data)
 
     def _write_bits(self, reg_addr: int, value: int,
-                    length: int, shift: int=0) -> None:
+                    length: int, shift: int = 0) -> None:
         data: int = self._read(reg_addr)[0]
         val: int = int('1' * length, 2) << shift
         data &= ~val  # data && inverse val = bit value (0, 1)
@@ -109,20 +111,21 @@ class BMP280:
 
     def _temperature(self) -> float:
         return self.fineT / ((2.0**9.0) * 10.0)
-    
+
     def _pressure(self) -> float:
-        var1: float = ((1.0 + (self.pC[2] * (self.fineT / 2.0 - 64e3)**2.0 
-               / 2.0**19.0 + self.pC[1] * (self.fineT / 2.0 - 64e3))
-               / 2.0**19.0 / 2.0**15.0) * self.pC[0])
-        var2: float = (((((self.fineT / 2.0 - 64e3)**2.0 * self.pC[5] / 2.0**15.0)
-               + (self.fineT / 2.0 - 64e3) * self.pC[4] * 2.0) / 4.0)
-               + (self.pC[3] * 2.0**16.0))
+        var1: float = ((1.0 + (self.pC[2] * (self.fineT / 2.0 - 64e3)**2.0
+                        / 2.0**19.0 + self.pC[1] * (self.fineT / 2.0 - 64e3))
+                        / 2.0**19.0 / 2.0**15.0) * self.pC[0])
+        var2: float = (((((self.fineT / 2.0 - 64e3)**2.0
+                        * self.pC[5] / 2.0**15.0)
+                        + (self.fineT / 2.0 - 64e3) * self.pC[4] * 2.0) / 4.0)
+                       + (self.pC[3] * 2.0**16.0))
 
         try:
             p: float = (((2.0**20.0 - self.rawP) - (var2 / 2.0**12.0))
-                * (5.0**4.0)*10.0 / var1)
+                        * (5.0**4.0) * 10.0 / var1)
             p += (((self.pC[8] * p**2.0 / 2.0**31.0)
-                 + (p * self.pC[7] / 2.0**15.0) + self.pC[6]) / 2.0**4.0)
+                   + (p * self.pC[7] / 2.0**15.0) + self.pC[6]) / 2.0**4.0)
         except:
             p: float = 0.0
         finally:
@@ -138,32 +141,31 @@ class BMP280:
         """ This function resets the BMP280. """
         self._write(REG.RESET, 0xB6)
 
-
-    def status(self) -> tuple[bool, bool]:
+    def status(self) -> list[bool]:
         """
         This function fetches the status bits of the BMP280.
-        
+
         The function returns two values in a tuple:
         - Updating [bool]
         - Measuring [bool]
 
         More info? See chapter 4.3.3 of the datasheet.
         """
-        return tuple(
-            self._read_bits(REG.STATUS, 1, shift=0),
-            self._read_bits(REG.STATUS, 1, shift=3),
-        )
+        return [
+            bool(self._read_bits(REG.STATUS, 1, shift=0)),
+            bool(self._read_bits(REG.STATUS, 1, shift=3)),
+        ]
 
-    def chip_id(self) -> bytearray:
+    def chip_id(self) -> int:
         """
         This function returns the Chip ID in bytearray.
         The ID is (according to the datasheet, see chapter 4.3.1)
         always `0x58`. To read out the value as an integer, make sure to
         read out the first value of the list (`[0]`).
         """
-        return self._read(REG.IDENTIFICATION, size=2)
+        return self._read(REG.IDENTIFICATION, size=2)[0]
 
-    def fetch(self, temp: bool=True, pres: bool=True) -> list[int|None]:
+    def fetch(self, temp: bool = True, pres: bool = True) -> list[int | None]:
         """
         Read temperature and/or pressure values from the BMP280.
         The temperature and pressure values can be selected for returning.
@@ -187,10 +189,10 @@ class BMP280:
             ] if value is not None
         ]
 
-    def standby(self, time: int=None) -> int | None:
+    def standby(self, time: int = None) -> int | None:
         """
         Read/Write function for the standby time.
-        
+
         Usage::
 
             from sensor import SETTINGS
@@ -198,7 +200,7 @@ class BMP280:
             value = BMP280().standby()
             # Write mode
             BMP280().standby(time=SETTINGS().standbyTime(0 <= x <= 7))
-        
+
         See `ESP32\\sensor\\settings.py` for more information.
         """
         if not time:
@@ -206,7 +208,7 @@ class BMP280:
         assert 0x00 <= time <= 0x07
         self._write_bits(REG.CONFIG, time, 3, shift=5)
 
-    def iir(self, mode: int=None) -> int | None:
+    def iir(self, mode: int = None) -> int | None:
         """
         Read/Write function for the Infinite Impulse Response (IIR) settings.
 
@@ -217,7 +219,7 @@ class BMP280:
             value = BMP280().iir()
             # Write mode
             BMP280().iir(mode=SETTINGS().iirMode(0 <= x <= 4))
-        
+
         See `ESP32\\sensor\\settings.py` for more information.
         """
         if not mode:
@@ -225,7 +227,7 @@ class BMP280:
         assert 0x00 <= mode <= 0x04
         self._write_bits(REG.CONFIG, mode, 3, shift=2)
 
-    def spi(self, state: bool=None) -> int | None:
+    def spi(self, state: bool = None) -> bool | None:
         """
         Read/Write function for the SPI settings.
 
@@ -235,15 +237,15 @@ class BMP280:
             value = BMP280().spi()
             # Write mode
             BMP280().spi(state=True or False)
-        
+
         See `ESP32\\sensor\\registers.py` for more information.
         """
         if state is None:
-            return self._read_bits(REG.CONFIG, 1, shift=0)
+            return bool(self._read_bits(REG.CONFIG, 1, shift=0))
         assert isinstance(state, bool)
         self._write_bits(REG.CONFIG, int(state), 1, shift=0)
 
-    def oversampling(self, pres_temp: tuple=None) -> list[int] | None:
+    def oversampling(self, pres_temp: tuple = None) -> list[int] | None:
         """
         Read/Write function for the oversampling settings.
         This function sets the pressure and temperature oversampling settings
@@ -258,7 +260,7 @@ class BMP280:
             BMP280().oversampling(pres_temp=SETTINGS().osMode(
                 0 <= x <= 5, 0 <= y <= 5
             ))
-        
+
         See `ESP32\\sensor\\settings.py` for more information.
         """
         if not pres_temp:
@@ -270,7 +272,7 @@ class BMP280:
         self._write_bits(REG.CTRL_MEAS, pres_temp[0], 3, shift=2)
         self._write_bits(REG.CTRL_MEAS, pres_temp[1], 3, shift=5)
 
-    def power(self, mode: int=None) -> int | None:
+    def power(self, mode: int = None) -> int | None:
         """
         Read/Write function for the power settings.
 
@@ -281,10 +283,10 @@ class BMP280:
             value = BMP280().power()
             # Write mode
             BMP280().power(SETTINGS().powerMode(0 <= x <= 2))
-        
+
         See `ESP32\\sensor\\settings.py` for more information.
         """
         if not mode:
-            return self._write_bits(REG.CTRL_MEAS, 2, shift=0)
+            return self._read_bits(REG.CTRL_MEAS, 2, shift=0)
         assert 0x00 <= mode <= 0x03
         self._write_bits(REG.CTRL_MEAS, mode, 2, shift=0)
