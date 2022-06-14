@@ -145,14 +145,15 @@ There is also a quicker way.
 cd ./ESP32
 ampy --port COMx --baud 115200 --delay 1 put main.py
 ```
-__When inserting the new files, make sure the PuTTY program is not connected to the ESP32. Otherwise the install file (and ampy) cannot write files to the ESP32 device.__
+_When inserting the new files, make sure the PuTTY program is not connected to the ESP32. Otherwise the install file (and ampy) cannot write files to the ESP32 device._
 
 
 ## Revision History
 
-| Release Name | Date       | Pull Request | Type        | Stable |
-| :----------- | :--------: | :----------: | :---------: | :----: |
-| v0.1.0       | 03-06-2022 | [#1][PR1]    | Pre-release | :x:    |
+| Release Name | Date       | Pull Request | Type           | Stable             |
+| :----------- | :--------: | :----------: | :------------: | :----------------: |
+| v0.1.0       | 03-06-2022 | [#1][PR1]    | Pre-release    | :x:                |
+| v1.0.0       | 14-06-2022 | [#2][PR2]    | Stable release | :heavy_check_mark: |
 
 [ESP32-LINK1]: https://www.espressif.com/en/products/devkits/esp32-devkitc
 [ESP32-LINK2]: https://www.bosch-sensortec.com/products/environmental-sensors/pressure-sensors/bmp280/
@@ -165,3 +166,5 @@ __When inserting the new files, make sure the PuTTY program is not connected to 
 [ESPTOOL]:/ESP32/wireless/settings.py
 [PuTTY]: https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html
 [PR1]: https://github.com/DutchFakeTuber/LSC_TEMP/releases/tag/v0.1.0
+[PR2]: https://github.com/DutchFakeTuber/LSC_TEMP/releases/tag/v1.0.0
+
