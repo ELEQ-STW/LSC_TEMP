@@ -161,7 +161,7 @@ The formulae are shown below in KaTeX and Python code.
 
 ### Fine Temperature
 $$\large{T_{fine} = \left(\frac{T_{raw}}{2^{14}} - \frac{C_{T1}}{2^{10}}\right) \bullet C_{T2} + \left(\frac{T_{raw}}{2^{17}} - \frac{C_{T1}}{2^{13}}\right)^2 \bullet C_{T3}}$$
-_NOTE:_ $ C=Compensation $
+_NOTE:_ $C=Compensation$
 ``` Python
 Tfine: float = ((Traw / 2.0**14.0 - Ct1 / 2.0**10.0) * Ct2 + ((Traw / 2.0**17.0 - Ct1 / 2.0**13.0)**2.0) * Ct3)
 ```
@@ -177,7 +177,7 @@ The Pressure formula is pretty long, it is split up in three parts for readabili
 $$\large{P_1 = 1+\frac{\left(C_{P3}\bullet\frac{\left(\frac{T_{fine}}{2}-64\bullet10^3\right)^2}{2^{19}}+C_{P2}\bullet\left(\frac{T_{fine}}{2}-64\bullet10^3\right)\right)}{\frac{2^{19}}{2^{15}}}\bullet C_{P1}}$$
 $$\large{P_2 = \frac{\left(\frac{T_{fine}}{2}-64\bullet10^3\right)^2\bullet\frac{C_{P6}}{2^{15}}+\left(\frac{T_{fine}}{2}-64\bullet10^3\right)\bullet C_{P5}\bullet2}{4}+C_{P4}\bullet2^{16}}$$
 $$\large{P = \begin{cases} 0 &\text{if }P_1\text{ or }P_2 = 0 \newline &\text{else }\large{\frac{C_{P9}\bullet \frac{\left(\left(2^{20}-P_{raw}\right)-\frac{P_2}{2^{12}}\bullet5^4\bullet\frac{10}{P_1}\right)^2}{2^{31}}+\left(\left(2^{20}-P_{raw}\right)-\frac{P_2}{2^{12}}\bullet5^4\bullet\frac{10}{P_1}\right)\bullet\frac{C_{P8}}{2^{15}}+C_{P7}}{2^4}}\end{cases}}$$
-_NOTE:_ $ C=Compensation $
+_NOTE:_ $C=Compensation$
 ``` Python
 var1: float = (1.0 + (Cp3 * (Tfine / 2.0 - 64e3)**2.0 / 2.0**19.0 + Cp2 * (Tfine / 2.0 - 64e3)) / 2.0**19.0 / 2.0**15.0) * Cp1
 var2: float = ((((Tfine / 2.0 - 64e3)**2.0 * Cp6 / 2.0**15.0) + (Tfine / 2.0 - 64e3) * Cp5 * 2.0) / 4.0) + (Cp4 * 2.0**16.0)
@@ -191,18 +191,19 @@ finally:
 ```
 
 ## Revision History
-| Release Name | Changed By      | Date       | Commit(s)      |
-| :----------: | :-------------- | :--------: | :------------: |
-| v1.1.0       | @DutchFakeTuber | 03-06-2022 | [c2def56][C11]
-| v1.0.1       | @DutchFakeTuber | 02-06-2022 | [d6723b0][C10] |
-| v1.0.0       | @DutchFakeTuber | 02-06-2022 | [7d9faaf][C9]  |
-| v0.2.0       | @DutchFakeTuber | 02-06-2022 | [7b487c7][C8]  |
-| v0.1.1       | @DutchFakeTuber | 01-06-2022 | [79f227e][C6], [f621ce5][C7] |
-| v0.1.0       | @DutchFakeTuber | 31-05-2022 | [5edb810][C3], [160218e][C4] & [edbb93e][C5] |
-| v0.0.2       | @DutchFakeTuber | 19-05-2022 | [43ad394][C2]  |
-| v0.0.1       | @DutchFakeTuber | 18-05-2022 | [b3cf2fc][C1]  |
+| Release Name | Changed By | Date       | Commit(s)      |
+| :----------: | :--------: | :--------: | :------------: |
+| v1.1.0       | [SLN][SLN] | 03-06-2022 | [c2def56][C11] |
+| v1.0.1       | [SLN][SLN] | 02-06-2022 | [d6723b0][C10] |
+| v1.0.0       | [SLN][SLN] | 02-06-2022 | [7d9faaf][C9]  |
+| v0.2.0       | [SLN][SLN] | 02-06-2022 | [7b487c7][C8]  |
+| v0.1.1       | [SLN][SLN] | 01-06-2022 | [79f227e][C6], [f621ce5][C7] |
+| v0.1.0       | [SLN][SLN] | 31-05-2022 | [5edb810][C3], [160218e][C4] & [edbb93e][C5] |
+| v0.0.2       | [SLN][SLN] | 19-05-2022 | [43ad394][C2]  |
+| v0.0.1       | [SLN][SLN] | 18-05-2022 | [b3cf2fc][C1]  |
 
 [DATASHEET]: https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bmp280-ds001.pdf
+[SLN]: https://github.com/DutchFakeTuber
 [C1]: https://github.com/DutchFakeTuber/LSC_TEMP/commit/b3cf2fc4a86e30e3900b2d122a08b5f0eb52edff
 [C2]: https://github.com/DutchFakeTuber/LSC_TEMP/commit/43ad394e35e6b15b93872f4744bedda8bb6a366d
 [C3]: https://github.com/DutchFakeTuber/LSC_TEMP/commit/5edb8100a0f430d6b37bf4a54f1db9a857062a5c
