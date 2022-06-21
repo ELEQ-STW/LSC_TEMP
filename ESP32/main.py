@@ -26,17 +26,17 @@ I2C1: dict = dict(sda=Pin(18), scl=Pin(19), freq=100_000)
 I2C2: dict = dict(sda=Pin(22), scl=Pin(23), freq=100_000)
 # The timeout timer for the BMP280. This value is the least time in
 # milliseconds between consecutive measurements on one BMP280 sensor.
-TIMER: int = 250
+TIMER: int = 25
 
 # Configure time by accessing this server
 # Find the server closest to you:
 # https://www.ntppool.org/zone/@
-ntptime.host = "0.nl.pool.ntp.org"
+ntptime.host = "0.europe.pool.ntp.org"
 TZ: int = 2  # Timezone
 
 # MQTT SSL settings. This can be set as True if the use of certificates is desired.
 # Please see the README for more information.
-MQTT_SSL: bool = True
+MQTT_SSL: bool = False
 if MQTT_SSL:
     with open('mqtt/certs/client.key', 'rb') as key:
         k: str = key.read()
@@ -52,9 +52,9 @@ else:
 #   More information of the settings?
 #   See mqtt/connector.py
 MQTT: dict = dict(
-    client_id=b'ESP32_TEST',  # ID of this device
-    server=b'10.10.3.39',  # Server IP address
-    port=8883,
+    client_id=b'',  # ID of this device
+    server=b'',  # Server IP address
+    port=1883,
     user=None,
     password=None,
     keepalive=30,
@@ -63,7 +63,7 @@ MQTT: dict = dict(
     socket_timeout=10,
     message_timeout=60,
 )
-MQTT_TOPIC: str = b'ESP32'
+MQTT_TOPIC: str = b''
 MQTT_QOS: int = 1
 MQTT_RETAIN: bool = True
 
@@ -112,7 +112,7 @@ def main(debug: bool = False):
         print('DEBUG IS ON\n', i2c)
 
     # Get data object (contains BMP280 and SoftI2C objects)
-    data: object = Data(sensor, period=5_000)
+    data: object = Data(sensor, samples=10)  #, period=1_000)
 
     # Setting up uMQTT robust
     mqtt: object = Connector(**MQTT)
