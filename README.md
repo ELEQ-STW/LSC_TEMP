@@ -8,6 +8,7 @@
     2. [ESP32](#esp32)
         1. [Flashing and Setup](#flashing-and-setup)
         2. [More Settings](#more-settings)
+        3. [Adding SSL](#adding-ssl)
 4. [Revision History](#revision-history)
 
 ## About
@@ -147,6 +148,42 @@ ampy --port COMx --baud 115200 --delay 1 put main.py
 ```
 _When inserting the new files, make sure the PuTTY program is not connected to the ESP32. Otherwise the install file (and ampy) cannot write files to the ESP32 device._
 
+#### Adding SSL
+An SSL key and certificate can be used if sending data securely is required.
+OpenSSL has been used to test this functionality. Other methods are not actively supported.
+
+Before using the SSL functionality, make sure to create the `certs` folder and put the _key_ and _certificate_ there.
+``` Powershell
+ampy --port COMx --baud 115200 --delay 1 mkdir /mqtt/certs
+ampy --port COMx --baud 115200 --delay 1 put client.key /mqtt/certs/client.key
+ampy --port COMx --baud 115200 --delay 1 put client.crt /mqtt/certs/client.crt
+```
+
+In [main.py](./ESP32/main.py) there are two variables for the SSL support: `MQTT_SSL` and `MQTT_SSL_DICT`. Make sure to set the `MQTT_SSL` to `True` if SSL functionality is desired. `MQTT_SSL_DICT` does not have to be changed if the key and certificate are put in the folder as shown above. Otherwise the `with open()` statements need to be changed.
+``` Python
+# MQTT SSL settings. This can be set as True if the use of certificates is desired.
+# Please see the README for more information.
+MQTT_SSL: bool = True
+if MQTT_SSL:
+    with open('mqtt/certs/client.key', 'rb') as key:
+        k: str = key.read()
+    with open('mqtt/certs/client.crt', 'rb') as cert:
+        c: str = cert.read()
+    MQTT_SSL_DICT: dict = dict(key=k, cert=c)
+else:
+    MQTT_SSL_DICT: dict = None
+
+# MQTT Settings
+#   Enter the desired settings here.
+#   More information of the settings?
+#   See mqtt/connector.py
+MQTT: dict = dict(
+    ...,
+    ssl=MQTT_SSL,
+    ssl_params=MQTT_SSL_DICT,
+    ...,
+)
+```
 
 ## Revision History
 
@@ -154,6 +191,7 @@ _When inserting the new files, make sure the PuTTY program is not connected to t
 | :----------- | :--------: | :----------: | :------------: | :----------------: |
 | v0.1.0       | 03-06-2022 | [#1][PR1]    | Pre-release    | :x:                |
 | v1.0.0       | 14-06-2022 | [#2][PR2]    | Stable release | :heavy_check_mark: |
+| v1.1.0       | 22-06-2022 | [#3][PR3]    | Stable release | :heavy_check_mark: |
 
 [ESP32-LINK1]: https://www.espressif.com/en/products/devkits/esp32-devkitc
 [ESP32-LINK2]: https://www.bosch-sensortec.com/products/environmental-sensors/pressure-sensors/bmp280/
@@ -167,4 +205,4 @@ _When inserting the new files, make sure the PuTTY program is not connected to t
 [PuTTY]: https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html
 [PR1]: https://github.com/DutchFakeTuber/LSC_TEMP/releases/tag/v0.1.0
 [PR2]: https://github.com/DutchFakeTuber/LSC_TEMP/releases/tag/v1.0.0
-
+[PR3]: https://github.com/DutchFakeTuber/LSC_TEMP/releases/tag/v1.1.0
