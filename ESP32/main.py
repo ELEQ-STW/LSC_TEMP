@@ -32,12 +32,12 @@ TIMER: int = 250
 # Configure time by accessing this server
 # Find the server closest to you:
 # https://www.ntppool.org/zone/@
-ntptime.host = "0.nl.pool.ntp.org"
-TZ: int = 2  # Timezone
+ntptime.host = "0.europe.pool.ntp.org"
+TZ: int = 0  # Timezone
 
 # MQTT SSL settings. This can be set as True if the use of certificates is desired.
 # Please see the README for more information.
-MQTT_SSL: bool = True
+MQTT_SSL: bool = False
 if MQTT_SSL:
     with open('mqtt/certs/client.key', 'rb') as key:
         k: str = key.read()
@@ -53,9 +53,9 @@ else:
 #   More information of the settings?
 #   See mqtt/connector.py
 MQTT: dict = dict(
-    client_id=b'Pole_1',  # ID of this device
-    server=b'10.10.3.39',  # Server IP address
-    port=8883,
+    client_id=b'',  # ID of this device
+    server=b'',  # Server IP address
+    port=1883,
     user=None,
     password=None,
     keepalive=60,
@@ -64,8 +64,8 @@ MQTT: dict = dict(
     socket_timeout=1,
     message_timeout=60,
 )
-MQTT_TOPIC: str = b'ESP32/Pole_1'
-MQTT_QOS: int = 1
+MQTT_TOPIC: str = b''
+MQTT_QOS: int = 0
 MQTT_RETAIN: bool = True
 
 
@@ -112,7 +112,7 @@ def main(debug: bool = False):
         print('DEBUG IS ON\n', i2c)
 
     # Get data object (contains BMP280 and SoftI2C objects)
-    data: object = Data(sensor, period=5_000)
+    data: object = Data(sensor, samples=10)  # , period=1_000)
 
     # Setting up uMQTT robust
     mqtt: object = Connector(**MQTT)
