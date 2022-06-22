@@ -3,6 +3,7 @@ import time
 import ntptime
 import gc
 import json
+import machine
 from machine import Pin
 
 # Local modules and variables
@@ -26,17 +27,17 @@ I2C1: dict = dict(sda=Pin(18), scl=Pin(19), freq=100_000)
 I2C2: dict = dict(sda=Pin(22), scl=Pin(23), freq=100_000)
 # The timeout timer for the BMP280. This value is the least time in
 # milliseconds between consecutive measurements on one BMP280 sensor.
-TIMER: int = 25
+TIMER: int = 250
 
 # Configure time by accessing this server
 # Find the server closest to you:
 # https://www.ntppool.org/zone/@
-ntptime.host = "0.europe.pool.ntp.org"
+ntptime.host = "0.nl.pool.ntp.org"
 TZ: int = 2  # Timezone
 
 # MQTT SSL settings. This can be set as True if the use of certificates is desired.
 # Please see the README for more information.
-MQTT_SSL: bool = False
+MQTT_SSL: bool = True
 if MQTT_SSL:
     with open('mqtt/certs/client.key', 'rb') as key:
         k: str = key.read()
@@ -52,18 +53,18 @@ else:
 #   More information of the settings?
 #   See mqtt/connector.py
 MQTT: dict = dict(
-    client_id=b'',  # ID of this device
-    server=b'',  # Server IP address
-    port=1883,
+    client_id=b'Pole_1',  # ID of this device
+    server=b'10.10.3.39',  # Server IP address
+    port=8883,
     user=None,
     password=None,
-    keepalive=30,
+    keepalive=60,
     ssl=MQTT_SSL,
     ssl_params=MQTT_SSL_DICT,
-    socket_timeout=10,
+    socket_timeout=1,
     message_timeout=60,
 )
-MQTT_TOPIC: str = b''
+MQTT_TOPIC: str = b'ESP32/Pole_1'
 MQTT_QOS: int = 1
 MQTT_RETAIN: bool = True
 
@@ -71,7 +72,6 @@ MQTT_RETAIN: bool = True
 def callback(pid, status) -> None:
     _status = ['Timeout', 'Successfully Delivered', 'Unknown PID']
     print(f"{pid=}, {status=} ({_status[status]})")
-
 
 def convert_to_json(time: str,
                     measurements: list,
@@ -112,7 +112,7 @@ def main(debug: bool = False):
         print('DEBUG IS ON\n', i2c)
 
     # Get data object (contains BMP280 and SoftI2C objects)
-    data: object = Data(sensor, samples=10)  #, period=1_000)
+    data: object = Data(sensor, period=5_000)
 
     # Setting up uMQTT robust
     mqtt: object = Connector(**MQTT)
@@ -129,12 +129,10 @@ def main(debug: bool = False):
 
     gc.enable()  # Enable garbage collection
     ntptime.settime()  # Set the local time according to `ntptime.host`
-    while True:
+    while mqtt.is_keepalive():
         # Get measurement data from all the sensors
         measurement: list = data.get()
-        # Make sure MQTT is still connected to the broker
-        if mqtt.is_conn_issue():
-            mqtt.resubscribe()
+        print(f'{mqtt.is_conn_issue()=}; {mqtt.is_keepalive()=}')
 
         # Publish measurements
         mqtt.publish(
@@ -144,10 +142,18 @@ def main(debug: bool = False):
             retain=MQTT_RETAIN,
             qos=MQTT_QOS,
         )
-        # Check if message has arrived. This is to ensure the memory does
-        # not overload. Overload of memory only applies to QoS 1
-        mqtt.check_msg()
+        try:
+            # Check if message has arrived. This is to ensure the memory does
+            # not overload. Overload of memory only applies to QoS 1
+            mqtt.check_msg()
+        except AttributeError as e:
+            # If the Broker could not be reached during startup.
+            raise AttributeError(f"Broker could not be reached.\n{e}")
+            # machine.reset() # Uncomment this line if a reset is desired.
+        mqtt.send_queue()
 
+    print("Connection with broker has been lost, rebooting device...")
+    machine.reset()
 
 if __name__ == '__main__':
     main(debug=ESP32["DEBUG"])
