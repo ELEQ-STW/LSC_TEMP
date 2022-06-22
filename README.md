@@ -191,6 +191,7 @@ MQTT: dict = dict(
 | :----------- | :--------: | :----------: | :------------: | :----------------: |
 | v0.1.0       | 03-06-2022 | [#1][PR1]    | Pre-release    | :x:                |
 | v1.0.0       | 14-06-2022 | [#2][PR2]    | Stable release | :heavy_check_mark: |
+| v1.1.0       | 22-06-2022 | [#3][PR3]    | Stable release | :heavy_check_mark: |
 
 [ESP32-LINK1]: https://www.espressif.com/en/products/devkits/esp32-devkitc
 [ESP32-LINK2]: https://www.bosch-sensortec.com/products/environmental-sensors/pressure-sensors/bmp280/
@@ -204,4 +205,4 @@ MQTT: dict = dict(
 [PuTTY]: https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html
 [PR1]: https://github.com/DutchFakeTuber/LSC_TEMP/releases/tag/v0.1.0
 [PR2]: https://github.com/DutchFakeTuber/LSC_TEMP/releases/tag/v1.0.0
-
+[PR3]: https://github.com/DutchFakeTuber/LSC_TEMP/releases/tag/v1.1.0
