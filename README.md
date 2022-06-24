@@ -189,9 +189,9 @@ MQTT: dict = dict(
 
 | Release Name | Date       | Pull Request | Type           | Stable             |
 | :----------- | :--------: | :----------: | :------------: | :----------------: |
-| v0.1.0       | 03-06-2022 | [#1][PR1]    | Pre-release    | :x:                |
-| v1.0.0       | 14-06-2022 | [#2][PR2]    | Stable release | :heavy_check_mark: |
 | v1.1.0       | 22-06-2022 | [#3][PR3]    | Stable release | :heavy_check_mark: |
+| v1.0.0       | 14-06-2022 | [#2][PR2]    | Stable release | :heavy_check_mark: |
+| v0.1.0       | 03-06-2022 | [#1][PR1]    | Pre-release    | :x:                |
 
 [ESP32-LINK1]: https://www.espressif.com/en/products/devkits/esp32-devkitc
 [ESP32-LINK2]: https://www.bosch-sensortec.com/products/environmental-sensors/pressure-sensors/bmp280/
