@@ -9,7 +9,8 @@
         1. [Flashing and Setup](#flashing-and-setup)
         2. [More Settings](#more-settings)
         3. [Adding SSL](#adding-ssl)
-4. [Revision History](#revision-history)
+4. [Flowchart Code](#flowchart-code)
+5. [Revision History](#revision-history)
 
 ## About
 The LS Charge project is focussing on implementing EV-Chargers into light poles.
@@ -184,6 +185,10 @@ MQTT: dict = dict(
     ...,
 )
 ```
+
+## Flowchart Code
+The main flowchart is presented below, other flowcharts can be found [here](/Flowcharts/).
+![Flowchart ESP32](/Flowcharts/ESP32_Flowchart.png)
 
 ## Revision History
 
