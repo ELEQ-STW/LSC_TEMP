@@ -33,7 +33,6 @@ TIMER: int = 250
 # Find the server closest to you:
 # https://www.ntppool.org/zone/@
 ntptime.host = "0.europe.pool.ntp.org"
-TZ: int = 0  # Timezone
 
 # MQTT SSL settings. This can be set as True if the use of certificates is desired.
 # Please see the README for more information.
@@ -73,13 +72,14 @@ def callback(pid, status) -> None:
     _status = ['Timeout', 'Successfully Delivered', 'Unknown PID']
     print(f"{pid=}, {status=} ({_status[status]})")
 
+
 def convert_to_json(time: str,
                     measurements: list,
                     debug: bool = False) -> str:
     # Print date as YEAR-MONTH-DAY with always two decimals
     f_date: function = lambda y, m, d: f"{y}-{m:02d}-{d:02d}"
-    # Print time as HH+TZ:MM:SS with always two decimals
-    f_time: function = lambda h, m, s: f"{h + TZ:02d}:{m:02d}:{s:02d}"
+    # Print time as HH:MM:SS with always two decimals
+    f_time: function = lambda h, m, s: f"{h:02d}:{m:02d}:{s:02d}"
     sensors: list = [
         [pos, meas]
         for pos, meas in zip(['A1', 'A2', 'B1', 'B2'], measurements)
@@ -95,6 +95,27 @@ def convert_to_json(time: str,
         print(string)
 
     return string
+
+
+def cet_cest_timezone():
+    """
+    This function determines which timezone the module is in.
+    The module is used in the CET timezone, which has a normal
+    and summer timezone value (+1 or +2 offset).
+    """
+    year = time.localtime()[0]
+    HHMarch = time.mktime(
+        (year, 3, (31-(int(5*year/4+4)) % 7), 1, 0, 0, 0, 0, 0))
+    HHOctober = time.mktime(
+        (year, 10, (31-(int(5*year/4+1)) % 7), 1, 0, 0, 0, 0, 0))
+    now = time.time()
+    if now < HHMarch:  # Before the last sunday of March
+        cet = time.localtime(now+3600)
+    elif now < HHOctober:  # Before the last sunday of October
+        cet = time.localtime(now+7200)
+    else:  # After the last day of October
+        cet = time.localtime(now+3600)
+    return cet
 
 
 def main(debug: bool = False):
@@ -128,7 +149,12 @@ def main(debug: bool = False):
         )
 
     gc.enable()  # Enable garbage collection
-    ntptime.settime()  # Set the local time according to `ntptime.host`
+    # Sometimes the ESP32 fails to connect to the ntp server.
+    try:
+        ntptime.settime()  # Set the local time according to `ntptime.host`
+    except:  # If unsuccessful, reset device.
+        machine.reset()
+
     while mqtt.is_keepalive():
         # Get measurement data from all the sensors
         measurement: list = data.get()
@@ -138,7 +164,7 @@ def main(debug: bool = False):
         mqtt.publish(
             MQTT_TOPIC,
             bytes(convert_to_json(
-                time.localtime(), measurement, debug=debug), 'utf-8'),
+                cet_cest_timezone(), measurement, debug=debug), 'utf-8'),
             retain=MQTT_RETAIN,
             qos=MQTT_QOS,
         )
@@ -154,6 +180,7 @@ def main(debug: bool = False):
 
     print("Connection with broker has been lost, rebooting device...")
     machine.reset()
+
 
 if __name__ == '__main__':
     main(debug=ESP32["DEBUG"])
