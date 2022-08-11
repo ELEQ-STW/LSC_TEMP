@@ -28,6 +28,22 @@ I2C2: dict = dict(sda=Pin(22), scl=Pin(23), freq=100_000)
 # The timeout timer for the BMP280. This value is the least time in
 # milliseconds between consecutive measurements on one BMP280 sensor.
 TIMER: int = 250
+# Select which buses to activate.
+# Two sensors per bus are required to avoid errors.
+BUS_A: bool = True
+BUS_B: bool = False
+
+buses: list = None
+if BUS_A:
+    buses: list = ['A1', 'A2']
+if BUS_B:
+    if isinstance(buses, list):
+        buses += ['B1', 'B2']
+    else:
+        buses: list = ['B1', 'B2']
+if not BUS_A and not BUS_B:
+    raise ValueError('BUS_A and BUS_B are both set to False')
+
 
 # Configure time by accessing this server
 # Find the server closest to you:
@@ -80,14 +96,10 @@ def convert_to_json(time: str,
     f_date: function = lambda y, m, d: f"{y}-{m:02d}-{d:02d}"
     # Print time as HH:MM:SS with always two decimals
     f_time: function = lambda h, m, s: f"{h:02d}:{m:02d}:{s:02d}"
-    sensors: list = [
-        [pos, meas]
-        for pos, meas in zip(['A1', 'A2', 'B1', 'B2'], measurements)
-    ]
     string: str = json.dumps(
         {
             'time': " ".join([f_date(*time[0:3]), f_time(*time[3:6])]),
-            'measurements': {f'{pos}': vals for pos, vals in sensors}
+            'measurements': measurements
         },
         separators=(',', ':'),
     )
@@ -121,7 +133,7 @@ def cet_cest_timezone():
 def main(debug: bool = False):
     # Setting up the BMP280 sensors
     i2c = Settings(esp32=ESP32, i2c1=I2C1, i2c2=I2C2, timer_period=TIMER)
-    sensor: list[BMP280] = i2c.settings()
+    sensor: list[BMP280] = i2c.settings(BUS_A=BUS_A, BUS_B=BUS_B)
     i2c.bmp280_setup(
         sensor,
         power=S().powerMode(2),
@@ -133,7 +145,7 @@ def main(debug: bool = False):
         print('DEBUG IS ON\n', i2c)
 
     # Get data object (contains BMP280 and SoftI2C objects)
-    data: object = Data(sensor, samples=10)  # , period=1_000)
+    data: object = Data(sensor, samples=10, period=1_000)
 
     # Setting up uMQTT robust
     mqtt: object = Connector(**MQTT)
@@ -157,8 +169,12 @@ def main(debug: bool = False):
 
     while mqtt.is_keepalive():
         # Get measurement data from all the sensors
-        measurement: list = data.get()
-        print(f'{mqtt.is_conn_issue()=}; {mqtt.is_keepalive()=}')
+        measurement: dict = {
+            f'{bus}': {'Temperature': val[0], 'Pressure': val[1]}
+            for bus, val in zip(buses, data.get())
+        }
+        if debug:
+            print(f'{mqtt.is_conn_issue()=}; {mqtt.is_keepalive()=}')
 
         # Publish measurements
         mqtt.publish(
