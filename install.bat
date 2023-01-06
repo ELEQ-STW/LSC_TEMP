@@ -56,7 +56,7 @@ IF NOT "%COMPORT%" == """" (
     IF NOT %PACKAGE% == 1 ( CALL :PACKAGE )
     :: Flashing the ESP32
     py -m esptool --port %COMPORT% erase_flash
-    py -m esptool --chip esp32 --port %COMPORT% --baud 460800 write_flash -z 0x1000 ESP32\esp32-20220117-v1.18.bin
+    py -m esptool --chip esp32 --port %COMPORT% --baud 460800 write_flash -z 0x1000 ESP32\esp32-20220618-v1.19.1.bin
 
     SET /A FLASH=0
     TIMEOUT /T 1 >NUL
@@ -80,7 +80,7 @@ IF NOT "%COMPORT%" == """" (
         ECHO UPLOADING !STR_FOLDERS[%%D]! FILES...
         cd !CD_FOLDERS[%%D]!
         IF %%D == 1 (
-            FOR %%F IN (*.py) DO ( ampy --port %COMPORT% --baud 115200 --delay 1 put %%F )
+            FOR %%F IN (*.py, *.json) DO ( ampy --port %COMPORT% --baud 115200 --delay 1 put %%F )
         ) ELSE (
             ampy --port %COMPORT% --baud 115200 --delay 1 mkdir !FOLDERS[%%D]!
             FOR %%F IN (*.py) DO ( ampy --port %COMPORT% --baud 115200 --delay 1 put %%F /!FOLDERS[%%D]!/%%F )
