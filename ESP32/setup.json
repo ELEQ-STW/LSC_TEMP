@@ -1,0 +1,64 @@
+{
+    "ESP32": {
+        "FREQ": 240000000,
+        "DEBUG": true
+    },
+    "I2C": {
+        "BUS_A": {
+            "ACTIVE": true,
+            "SDA": 18,
+            "SCL": 19,
+            "FREQ": 100000
+        },
+        "BUS_B": {
+            "ACTIVE": true,
+            "SDA": 22,
+            "SCL": 23,
+            "FREQ": 100000
+        }
+    },
+    "BMP280": {
+        "TIMER": 25,
+        "SAMPLES": 30,
+        "PERIOD": null,
+        "SETUP": {
+            "POWER": 2,
+            "IIR": 3,
+            "SPI": false,
+            "OS": {
+                "TEMP": 2,
+                "PRES": 4
+            }
+        }
+    },
+    "WIRELESS": {
+        "SSID": "",
+        "PASSWORD": ""
+    },
+    "NTP": {
+        "USE_NTP": true,
+        "ADDRESS": "pool.ntp.org",
+        "COMPUTE_CET": true
+    },
+    "MQTT": {
+        "TOPIC": "",
+        "CLIENT_ID": "",
+        "SERVER": "",
+        "PORT": 1883,
+        "USER": "",
+        "PASSWORD": "",
+        "RETAIN": false,
+        "KEEPALIVE": 600,
+        "SEND_KEEPALIVE": 60,
+        "SEND_MEASUREMENT": 300,
+        "QOS": 0,
+        "SSL": {
+            "USE_SSL": false,
+            "KEY": null,
+            "CERT": null,
+            "SERVER_HOSTNAME": ""
+        },
+        "SOCKET_TIMEOUT": 3,
+        "MESSAGE_TIMEOUT": 15
+    }
+}

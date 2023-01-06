@@ -1,10 +1,10 @@
-# Standard micropython libraries
+# Standard microPython libraries
 import time
 import ntptime
 import gc
 import json
-import machine
 from machine import Pin
+from machine import reset as reset_device
 
 # Local modules and variables
 from helpers import Data
@@ -13,190 +13,246 @@ from sensor import BMP280
 from sensor import SETTINGS as S
 from mqtt import Connector
 
-# General settings for the ESP32
-ESP32: dict = dict(
-    FREQ=80_000_000,
-    DEBUG=True  # Set this value to False if debug is not desired.
-)
 
-# I2C Settings:
-#   sda:  Data Pin  -> Data communication line
-#   scl:  Clock Pin -> Clock line
-#   freq: Baudrate  -> Communication speed in Hz
-I2C1: dict = dict(sda=Pin(18), scl=Pin(19), freq=100_000)
-I2C2: dict = dict(sda=Pin(22), scl=Pin(23), freq=100_000)
-# The timeout timer for the BMP280. This value is the least time in
-# milliseconds between consecutive measurements on one BMP280 sensor.
-TIMER: int = 250
-# Select which buses to activate.
-# Two sensors per bus are required to avoid errors.
-BUS_A: bool = True
-BUS_B: bool = False
+CONFIG: dict = json.loads(open('setup.json', 'r').read())
+ESP32: dict = CONFIG['ESP32']
+I2C: dict = CONFIG['I2C']
+SENSOR: dict = CONFIG['BMP280']
+WIRELESS: dict = CONFIG['WIRELESS']
+NTP: dict = CONFIG['NTP']
+MQTT: dict = CONFIG['MQTT']
+del CONFIG
 
-buses: list = None
-if BUS_A:
-    buses: list = ['A1', 'A2']
-if BUS_B:
-    if isinstance(buses, list):
-        buses += ['B1', 'B2']
+
+def callback(pid: int, status: int) -> None:
+    """MQTT Callback function.
+
+    Args:
+        pid (int): Is delivered by the MQTT module.
+        status (int): Is delivered by the MQTT module.
+
+    NOTE: The output is printed in the terminal and can be viewed using
+    PuTTY or something similar.
+    """
+    _status: list = ['Timeout', 'Successfully Delivered', 'Unknown PID']
+    print(f'{pid=}, {status=} ({_status[status]})')
+
+
+def cet_tz(convert=NTP['COMPUTE_CET']):
+    """
+    Converting Coordinated Universal Time (UTC) to
+    Central European (Summer) Time (CE(S)T).
+
+    This method checks if the current datetime is between the
+    last sunday of March and the last sunday of October.
+    If true, add two hours to the GMT time.
+    Else, add one hour.
+    """
+    now: time.time = time.time()
+    if convert:
+        year: int = time.localtime()[0]
+        month: function = lambda month: time.mktime(
+            (year, month, (31-(int(5 * year / 4 + 4)) % 7), 1, 0, 0, 0, 0, 0))
+        if month(3) < now < month(10):
+            cet: time.localtime = time.localtime(now + 2 * 60**2)
+        else:
+            cet: time.localtime = time.localtime(now + 60**2)
     else:
-        buses: list = ['B1', 'B2']
-if not BUS_A and not BUS_B:
-    raise ValueError('BUS_A and BUS_B are both set to False')
+        cet: time.localtime = time.localtime(now)
+    return cet[:6]  # Return without the weekday and yearday values
 
 
-# Configure time by accessing this server
-# Find the server closest to you:
-# https://www.ntppool.org/zone/@
-ntptime.host = "0.europe.pool.ntp.org"
+def jsonize(time: bool = False,
+            message: list | str = None,
+            debug: bool = ESP32['DEBUG']) -> str:
+    """Converting data to JSON.
 
-# MQTT SSL settings. This can be set as True if the use of certificates is desired.
-# Please see the README for more information.
-MQTT_SSL: bool = False
-if MQTT_SSL:
-    with open('mqtt/certs/client.key', 'rb') as key:
-        k: str = key.read()
-    with open('mqtt/certs/client.crt', 'rb') as cert:
-        c: str = cert.read()
-    MQTT_SSL_DICT: dict = dict(key=k, cert=c)
-else:
-    MQTT_SSL_DICT: dict = None
+    Args:
+        time (str): time.time() function.
+        measurements (list): Measurements measured from the BMP280 modules
+        ping (bool): Indication if the message is a 'ping'.
+        debug (bool, optional): Defaults to CONFIG['ESP32']['DEBUG'].
 
-
-# MQTT Settings
-#   Enter the desired settings here.
-#   More information of the settings?
-#   See mqtt/connector.py
-MQTT: dict = dict(
-    client_id=b'',  # ID of this device
-    server=b'',  # Server IP address
-    port=1883,
-    user=None,
-    password=None,
-    keepalive=60,
-    ssl=MQTT_SSL,
-    ssl_params=MQTT_SSL_DICT,
-    socket_timeout=1,
-    message_timeout=60,
-)
-MQTT_TOPIC: str = b''
-MQTT_QOS: int = 0
-MQTT_RETAIN: bool = True
-
-
-def callback(pid, status) -> None:
-    _status = ['Timeout', 'Successfully Delivered', 'Unknown PID']
-    print(f"{pid=}, {status=} ({_status[status]})")
-
-
-def convert_to_json(time: str,
-                    measurements: list,
-                    debug: bool = False) -> str:
-    # Print date as YEAR-MONTH-DAY with always two decimals
-    f_date: function = lambda y, m, d: f"{y}-{m:02d}-{d:02d}"
-    # Print time as HH:MM:SS with always two decimals
-    f_time: function = lambda h, m, s: f"{h:02d}:{m:02d}:{s:02d}"
-    string: str = json.dumps(
-        {
-            'time': " ".join([f_date(*time[0:3]), f_time(*time[3:6])]),
-            'measurements': measurements
-        },
-        separators=(',', ':'),
-    )
+    Returns:
+        str: _description_
+    """
+    string: dict = {'message': 'Measurement' if time else message}
+    if time:
+        string['time'] = cet_tz(NTP['COMPUTE_CET'])
+        string['measurements'] = message
+    jsonString: str = json.dumps(string, separators=(',', ':'))
     if debug:
-        print(string)
+        print(jsonString)
+    return jsonString
 
-    return string
 
-
-def cet_cest_timezone():
+def setup() -> tuple[Data, Connector, list[str]]:
     """
-    This function determines which timezone the module is in.
-    The module is used in the CET timezone, which has a normal
-    and summer timezone value (+1 or +2 offset).
+    Setup function for initializing the ESP32.
+
+    The function does the following:
+    - Initialize the I2C bus(es)
+    - Configuring the BMP280 sensor(s)
+    - Connecting to the WiFi access point
+    - Initializing MQTT (QoS 0 or 1)
+
+    Returns:
+        tuple[Data, Connector, list[str]]
     """
-    year = time.localtime()[0]
-    HHMarch = time.mktime(
-        (year, 3, (31-(int(5*year/4+4)) % 7), 1, 0, 0, 0, 0, 0))
-    HHOctober = time.mktime(
-        (year, 10, (31-(int(5*year/4+1)) % 7), 1, 0, 0, 0, 0, 0))
-    now = time.time()
-    if now < HHMarch:  # Before the last sunday of March
-        cet = time.localtime(now+3600)
-    elif now < HHOctober:  # Before the last sunday of October
-        cet = time.localtime(now+7200)
-    else:  # After the last day of October
-        cet = time.localtime(now+3600)
-    return cet
-
-
-def main(debug: bool = False):
     # Setting up the BMP280 sensors
-    i2c = Settings(esp32=ESP32, i2c1=I2C1, i2c2=I2C2, timer_period=TIMER)
-    sensor: list[BMP280] = i2c.settings(BUS_A=BUS_A, BUS_B=BUS_B)
+    BUS_A: bool = I2C['BUS_A'].pop('ACTIVE')
+    BUS_B: bool = I2C['BUS_B'].pop('ACTIVE')
+    assert any((BUS_A, BUS_B)), "No I2C bus active, \
+        please check the setup.json file."
+    bus: list = []
+    if BUS_A:
+        bus += ['A1', 'A2']
+    if BUS_B:
+        bus += ['B1', 'B2']
+
+    buses: function = lambda bus: {
+        k.lower(): v if k == 'FREQ' else Pin(v)
+        for k, v in bus.items()
+    }
+    i2c = Settings(
+        esp32=ESP32,
+        i2c1=buses(I2C['BUS_A']),
+        i2c2=buses(I2C['BUS_B']),
+        timer_period=SENSOR['TIMER']
+    )
+    sensor: list[BMP280] = i2c.settings(
+        BUS_A=BUS_A,
+        BUS_B=BUS_B
+    )
     i2c.bmp280_setup(
         sensor,
-        power=S().powerMode(2),
-        iir=S().iirMode(3),
-        spi=False,
-        os=S().osMode(2, 4),
+        # Dictionary unpacking
+        **{k.lower(): list(v.values()) if k == 'OS' else v
+           for k, v in SENSOR['SETUP'].items()}
     )
-    if debug:
+
+    # Try to connect to the WiFi network.
+    # If the connection fails, reboot device.
+    i2c.wireless(*list(WIRELESS.values()))
+
+    if ESP32['DEBUG']:
         print('DEBUG IS ON\n', i2c)
 
-    # Get data object (contains BMP280 and SoftI2C objects)
-    data: object = Data(sensor, samples=10, period=1_000)
+    # Get data object (Contains BMP280 and SoftI2C objects)
+    data: Data = Data(
+        sensor,
+        samples=SENSOR['SAMPLES'],
+        period=SENSOR['PERIOD']
+    )
 
     # Setting up uMQTT robust
-    mqtt: object = Connector(**MQTT)
+    file: function = lambda path: (
+        None if not path else open(path, 'rb').read())
+    mqtt: Connector = Connector(
+        MQTT['CLIENT_ID'],
+        MQTT['SERVER'],
+        port=MQTT['PORT'],
+        user=MQTT['USER'],
+        password=MQTT['PASSWORD'],
+        keepalive=MQTT['KEEPALIVE'],
+        ssl=MQTT['SSL'].pop('USE_SSL'),
+        ssl_params={
+            k.lower(): v if k not in ['KEY', 'CERT'] else file(v)
+            for k, v in MQTT['SSL'].items()
+        },
+        socket_timeout=MQTT['SOCKET_TIMEOUT'],
+        message_timeout=MQTT['MESSAGE_TIMEOUT']
+    )
     mqtt.set_callback_status(callback)
     # If the current MQTT session is still active on the broker
     if not mqtt.connect(clean_session=False):
-        print('Setting up new session...')
+        if ESP32['DEBUG']:
+            print('Setting up new session...')
         mqtt.publish(
-            MQTT_TOPIC,
-            bytes('Connecting...', 'utf-8'),
-            retain=MQTT_RETAIN,
-            qos=MQTT_QOS,
+            MQTT['TOPIC'],
+            bytes(jsonize(message='Connecting...'), 'utf-8'),
+            retain=MQTT['RETAIN'],
+            qos=MQTT['QOS'],
         )
 
-    gc.enable()  # Enable garbage collection
-    # Sometimes the ESP32 fails to connect to the ntp server.
-    try:
-        ntptime.settime()  # Set the local time according to `ntptime.host`
-    except:  # If unsuccessful, reset device.
-        machine.reset()
-
-    while mqtt.is_keepalive():
-        # Get measurement data from all the sensors
-        measurement: dict = {
-            f'{bus}': {'Temperature': val[0], 'Pressure': val[1]}
-            for bus, val in zip(buses, data.get())
-        }
-        if debug:
-            print(f'{mqtt.is_conn_issue()=}; {mqtt.is_keepalive()=}')
-
-        # Publish measurements
-        mqtt.publish(
-            MQTT_TOPIC,
-            bytes(convert_to_json(
-                cet_cest_timezone(), measurement, debug=debug), 'utf-8'),
-            retain=MQTT_RETAIN,
-            qos=MQTT_QOS,
-        )
+    # Set up a connection with the NTP server if desired.
+    # If the connection fails, reset the device.
+    if NTP['USE_NTP']:
+        ntptime.host = NTP['ADDRESS']
         try:
-            # Check if message has arrived. This is to ensure the memory does
-            # not overload. Overload of memory only applies to QoS 1
-            mqtt.check_msg()
-        except AttributeError as e:
-            # If the Broker could not be reached during startup.
-            raise AttributeError(f"Broker could not be reached.\n{e}")
-            # machine.reset() # Uncomment this line if a reset is desired.
-        mqtt.send_queue()
+            ntptime.settime()
+        except:
+            reset_device()
 
-    print("Connection with broker has been lost, rebooting device...")
-    machine.reset()
+    # Enable garbage collection
+    gc.enable()
+
+    return data, mqtt, bus
+
+
+def main(data: Data, mqtt: Connector, buses: list[str]) -> None:
+    """
+    Main function of the ESP32 measurement system.
+    The function will, after the setup has been successfully executed,
+    send messages (ping or measurements) to the MQTT broker. Repeat the
+    process if the keepalive set in the setup.json file is maintained.
+    The function automatically reboots if the connection with the broker
+    is lost.
+
+    Args:
+        data (Data): Initialized object (returned by setup)
+        mqtt (Connector): Initialized object (returned by setup)
+        buses (list[str]): List with active sensors. Two for each bus (A, B)
+    """
+    timer: int = time.time_ns()
+    counter: int = MQTT['SEND_MEASUREMENT'] // MQTT['SEND_KEEPALIVE']
+    while mqtt.is_keepalive():
+        send_message: bool = False
+        # If it is time to measure
+        if counter == 0:
+            # Get measurement data from all the sensors
+            message: dict = {
+                f'{bus}': {'Temperature': val[0], 'Pressure': val[1]/100.0}
+                for bus, val in zip(buses, data.get())
+            }
+            send_message: bool = True
+            counter: int = MQTT['SEND_MEASUREMENT'] // MQTT['SEND_KEEPALIVE']
+
+        # If it is ready to send a 'ping' to preserve keepalive
+        elif ((time.time_ns() - timer) / 10**9) - MQTT['SEND_KEEPALIVE'] > 0:
+            message: str = 'Ping'
+            send_message: bool = True
+            counter -= 1
+            timer: int = time.time_ns()
+
+        # Send message if available
+        if send_message:
+            message: bytes = bytes(
+                jsonize(time=isinstance(message, dict), message=message),
+                'utf-8'
+            )
+            mqtt.publish(MQTT['TOPIC'],
+                         message,
+                         retain=MQTT['RETAIN'],
+                         qos=MQTT['QOS'])
+
+        try:
+            # Check if message has arrived. This is to ensure the memory
+            # does not overload. Overload of memory only applies to QoS 1.
+            if MQTT['QOS'] == 1:
+                mqtt.check_msg()
+            mqtt.send_queue()
+        except AttributeError as e:
+            # If a connection with the broker could not be established during startup.
+            # raise AttributeError(f'Broker could not be reached.\n{e}')
+            reset_device()
+
+    if ESP32['DEBUG']:
+        print("Connection with broker has been lost, rebooting device...")
+        time.sleep(1)
+    reset_device()
 
 
 if __name__ == '__main__':
-    main(debug=ESP32["DEBUG"])
+    data, mqtt, buses = setup()
+    main(data, mqtt, buses)

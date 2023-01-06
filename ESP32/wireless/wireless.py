@@ -53,6 +53,7 @@ class WLAN:
     def connect(self) -> None:
         _time = time()
         self.active(True)
+        self.disconnect()
         if not self.isConnected():
             self.wlan.connect(self.SSID, self.PWD)
             while not self.isConnected():
