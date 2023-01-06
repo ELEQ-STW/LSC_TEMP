@@ -48,22 +48,17 @@ Before you start with the setup, make sure you have all the components mentioned
 #### Flashing and Setup
 The ESP32 can be flashed and set up with the `install.bat` tool. This script is specifically written to automate the flashing and setup process.
 
-Before the files can be uploaded to the ESP32, make sure that the WLAN configuration settings are filled in. This is done by editing the [settings.py][ESPTOOL] file:
+Before the files can be uploaded to the ESP32, make sure that the WLAN configuration settings are filled in. This is done by editing the [setup.json][SETUP] file:
 
-``` Python
-SSID: str = ''  # <- ADD SSID OF THE DESIRED NETWORK HERE
-PASSWORD: str = ''  # <- PASSWORD OF THE DESIRED NETWORK
-
-# NOTE: The SSID and PASSWORD need to be in parenthesis.
-#       If there is a parenthesis in the PASSWORD,
-#       please escape it by adding a '\' in front of the parenthesis.
-
-# Check if the variables are empty
-if (SSID, PASSWORD) == ('', ''):
-    raise ValueError(
-        "The SSID and PASSWORD for the WiFi-connectors are empty.\n\
-        Please check the settings.py file in ESP32/wireless/"
-    )
+``` JSON
+{
+    ...
+    "WIRELESS": {
+        "SSID": "WiFi Name",
+        "PASSWORD": "WiFi Password"
+    },
+    ...
+}
 ```
 
 Save the changes you just made to the file.
@@ -101,42 +96,75 @@ If the above code did not result in errors, all necessary packages and files are
 
 #### More Settings
 In addition to the WiFi settings mentioned in the [previous chapter](#flashing-and-setup), you are also able to set different parameters for the complete system.
-These settings can be found in the [main.py](/ESP32/main.py) file.
+These settings can also be found in the [setup.json][SETUP] file.
 
 These settings are:
 
-``` Python
-ESP32: dict = dict(
-    FREQ=80_000_000,  # Operating frequency of the ESP32 in Hz (default: 240MHz)
-    DEBUG=True,  # Enable/Disable debug functions. These can be read out using PuTTY
-)
-I2C1: dict = dict(  # Settings for the first I2C bus
-    sda=Pin(18),  # Physical ESP32 pin for the data line (I2C)
-    scl=Pin(19),  # Physical ESP32 pin for the clock line (I2C)
-    freq=100_000,  # Baudrate of the I2C bus (communcation speed in Hz)
-)
-I2C2: dict = dict(  # Settings for the second I2C bus
-    sda=Pin(22),  # Physical ESP32 pin for the data line (I2C)
-    scl=Pin(23),  # Physical ESP32 pin for the clock line (I2C)
-    freq=100_000,  # Baudrate of the I2C bus (communication speed in Hz)
-)
-TIMER: int = 250  # Interval between measurements (in milliseconds) per BMP280 sensor.
-MQTT: dict = dict(  # MQTT Settings
-    client_id=b'',  # ID of the ESP32 device
-    server=b'',  # IP address of the MQTT Broker
-    port=1883,
-    user=None,
-    password=None,
-    keepalive=5,
-    ssl=False,
-    ssl_params=None,
-    socket_timeout=3,
-    message_timeout=30,
-)  # More information on these settings can be found in /ESP32/mqtt/connector.py
-MQTT_TOPIC: str = b''  # Topic to publish to
-MQTT_QOS: int = 1  # Quality of Service of the communication system
-MQTT_RETAIN: bool = True  # Tell the broker to retain the last message or not.
-                          # Can be used to debug quicker.
+``` JSON
+{
+    "ESP32": {
+        "FREQ": 240000000,  // Operating Frequencies of 80, 160 and 240 MHz are possible. Default is 240 MHz.
+        "DEBUG": true  // Set to true if an output to the terminal (e.g. PuTTY) is desired.
+    },
+    "I2C": {
+        "BUS_A": {  // Settings for BUS A
+            "ACTIVE": true,  // Set BUS A active
+            "SDA": 18,  // ESP32 pin x connected to the data line of BUS A
+            "SCL": 19,  // ESP32 pin x connected to the clock line of BUS A
+            "FREQ": 100000  // Communication speed in Hertz
+        },
+        "BUS_B": {  // Settings for BUS B
+            "ACTIVE": true,  // Set BUS B active
+            "SDA": 22,  // ESP32 pin x connected to the data line of BUS B
+            "SCL": 23,  // ESP32 pin x connected to the clock line of BUS B
+            "FREQ": 100000  // Communication speed in Hertz
+        }
+    },
+    "BMP280": {  // Settings for the BMP280 sensor(s)
+        "TIMER": 25,  // Delay between every request. Minimum is 10 ms. Default is 25 ms.
+        "SAMPLES": 30,  // Amount of measurement samples. Maximum is 50 due to memory limits.
+        "PERIOD": null,  // Amount of time available to get measurements. Max 1000 ms.
+        "SETUP": {  // Configuration settings of the BMP280. See /sensor/settings.py for more information.
+            "POWER": 2,
+            "IIR": 3,
+            "SPI": false,
+            "OS": {
+                "TEMP": 2,
+                "PRES": 4
+            }
+        }
+    },
+    "WIRELESS": {  // WiFi settings
+        "SSID": "WiFi Name",  // SSID of the WiFi access point that you want to connect to
+        "PASSWORD": "WiFi Password"  // Password of the access point
+    },
+    "NTP": {  // Network Time Protocol settings
+        "USE_NTP": true,  // Sync the ESP32's clock with the NTP server.
+        "ADDRESS": "pool.ntp.org",  // Server address (see https://www.ntppool.org/en/use.html for more information)
+        "COMPUTE_CET": true  // Compute Coordinated Universal Time (UCT) to Central European (Summer) Time
+    },
+    "MQTT": {  // Message Queueing Telemetry Transport settings
+        "TOPIC": "topic/to/publish/to",  // Topic to publish to
+        "CLIENT_ID": "ESP32",  // Name of this device
+        "SERVER": "0.0.0.0",  // Server (IP) address
+        "PORT": 1883,  // 1883 (not secure), 8883 (secure) or server specific port
+        "USER": null,  // Username for connecting to the broker (leave as null if not required)
+        "PASSWORD": null,  // Password for connecting to the broker (leave as null if not required)
+        "RETAIN": false,  // Retain messages (ideal for debugging!)
+        "KEEPALIVE": 600,  // Keepalive in seconds
+        "SEND_KEEPALIVE": 60,  // Send a 'Ping' message every x seconds
+        "SEND_MEASUREMENT": 120,  // Send measurements every x seconds (must be larger than SEND_KEEPALIVE)
+        "QOS": 0,  // Quality of Service (0 or 1) [https://www.hivemq.com/blog/mqtt-essentials-part-6-mqtt-quality-of-service-levels/]
+        "SSL": {  // Secure Sockets Layer settings
+            "USE_SSL": true,
+            "KEY": null,  // Path of the key if required
+            "CERT": null,  // Path of the certificate if required
+            "SERVER_HOSTNAME": null // Server hostname if required (e.g. HiveMQ)
+        },
+        "SOCKET_TIMEOUT": 3,  // Socket timeout in seconds
+        "MESSAGE_TIMEOUT": 15  // Message timeout in seconds
+    }
+}
 ```
 
 The ESP32 does not receive the updated code automatically.
@@ -160,30 +188,21 @@ ampy --port COMx --baud 115200 --delay 1 put client.key /mqtt/certs/client.key
 ampy --port COMx --baud 115200 --delay 1 put client.crt /mqtt/certs/client.crt
 ```
 
-In [main.py](./ESP32/main.py) there are two variables for the SSL support: `MQTT_SSL` and `MQTT_SSL_DICT`. Make sure to set the `MQTT_SSL` to `True` if SSL functionality is desired. `MQTT_SSL_DICT` does not have to be changed if the key and certificate are put in the folder as shown above. Otherwise the `with open()` statements need to be changed.
-``` Python
-# MQTT SSL settings. This can be set as True if the use of certificates is desired.
-# Please see the README for more information.
-MQTT_SSL: bool = True
-if MQTT_SSL:
-    with open('mqtt/certs/client.key', 'rb') as key:
-        k: str = key.read()
-    with open('mqtt/certs/client.crt', 'rb') as cert:
-        c: str = cert.read()
-    MQTT_SSL_DICT: dict = dict(key=k, cert=c)
-else:
-    MQTT_SSL_DICT: dict = None
-
-# MQTT Settings
-#   Enter the desired settings here.
-#   More information of the settings?
-#   See mqtt/connector.py
-MQTT: dict = dict(
-    ...,
-    ssl=MQTT_SSL,
-    ssl_params=MQTT_SSL_DICT,
-    ...,
-)
+In [setup.json][SETUP] there are four variables for the SSL support: `USE_SSL`, `KEY`, `CERT` and `SERVER_HOSTNAME`. Make sure to set the `USE_SSL` to `true` if SSL functionality is desired. `KEY` and `CERT` does have to be changed with the corresponding file path. If the key and certificate are put in the folder as shown above, copy and paste these paths in the `.json` file. Otherwise the `with open()` statements need to be changed. The variable `SERVER_HOSTNAME` can be used to connect to, for example, [HiveMQ](https://www.hivemq.com/hivemq/mqtt-broker/).
+``` JSON
+{
+    ...
+    "MQTT": {
+        ...
+        "SSL": {  // Secure Sockets Layer settings
+            "USE_SSL": true,
+            "KEY": null,  // Path of the key if required
+            "CERT": null,  // Path of the certificate if required
+            "SERVER_HOSTNAME": null // Server hostname if required (e.g. HiveMQ)
+        },
+        ...
+    }
+}
 ```
 
 ## Flowchart Code
@@ -194,6 +213,7 @@ The main flowchart is presented below, other flowcharts can be found [here](/Flo
 
 | Release Name | Date       | Pull Request | Type           | Stable             |
 | :----------- | :--------: | :----------: | :------------: | :----------------: |
+| v1.2.0       | 06-01-2023 | [#4][PR4]    | Stable release | :heavy_check_mark: |
 | v1.1.0       | 22-06-2022 | [#3][PR3]    | Stable release | :heavy_check_mark: |
 | v1.0.0       | 14-06-2022 | [#2][PR2]    | Stable release | :heavy_check_mark: |
 | v0.1.0       | 03-06-2022 | [#1][PR1]    | Pre-release    | :x:                |
@@ -206,8 +226,9 @@ The main flowchart is presented below, other flowcharts can be found [here](/Flo
 [ESP32-LINK6]: https://www.digikey.nl/nl/products/detail/linx-technologies-inc/ANT-W63-WRT-SMA/15622872
 [ESP32-LINK7]: https://www.conrad.nl/nl/p/renkforce-jkff403-jumper-kabel-arduino-banana-pi-raspberry-pi-40x-draadbrug-bus-40x-draadbrug-bus-30-00-cm-bont-2299845.html
 [AMPY]: https://pypi.org/project/adafruit-ampy/
-[ESPTOOL]:/ESP32/wireless/settings.py
+[SETUP]: /ESP32/setup.json
 [PuTTY]: https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html
 [PR1]: https://github.com/DutchFakeTuber/LSC_TEMP/releases/tag/v0.1.0
 [PR2]: https://github.com/DutchFakeTuber/LSC_TEMP/releases/tag/v1.0.0
 [PR3]: https://github.com/DutchFakeTuber/LSC_TEMP/releases/tag/v1.1.0
+[PR4]: https://github.com/DutchFakeTuber/LSC_TEMP/releases/tag/v1.2.0

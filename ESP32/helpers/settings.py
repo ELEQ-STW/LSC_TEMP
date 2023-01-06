@@ -5,8 +5,6 @@ from machine import freq
 # Local modules and variables
 from sensor import BMP280
 from wireless import WLAN
-from wireless import SSID
-from wireless import PASSWORD
 
 
 class Settings:
@@ -37,9 +35,9 @@ class Settings:
         freq(self.esp32['FREQ'])
         self.red_freq -= freq()
 
-    def _wireless(self) -> None:
+    def wireless(self, ssid, password) -> None:
         """ Connecting device to internet """
-        self.internet = WLAN(SSID, PASSWORD)
+        self.internet = WLAN(ssid, password)
         self.internet.connect()
 
     def _sensor(self, BUS_A: bool = True, BUS_B: bool = False) -> None:
@@ -81,7 +79,6 @@ class Settings:
         """
         assert [BUS_A, BUS_B] != [False, False]
         self._esp32()
-        self._wireless()
         self._sensor(BUS_A=BUS_A, BUS_B=BUS_B)
         if BUS_A and BUS_B:
             return [
