@@ -1,6 +1,6 @@
 {
     "ESP32": {
-        "FREQ": 80000000,
+        "FREQ": 240000000,
         "DEBUG": true
     },
     "I2C": {
@@ -32,31 +32,31 @@
         }
     },
     "WIRELESS": {
-        "SSID": "ELEQ-DATA",
-        "PASSWORD": "2kQxfrXd"
+        "SSID": "",
+        "PASSWORD": ""
     },
     "NTP": {
         "USE_NTP": true,
-        "ADDRESS": "0.europe.pool.ntp.org",
+        "ADDRESS": "pool.ntp.org",
         "COMPUTE_CET": true
     },
     "MQTT": {
-        "TOPIC": "LS_Lab/Test",
-        "CLIENT_ID": "esp32",
-        "SERVER": "d5465a8279354d2daa53f46057cbc803.s2.eu.hivemq.cloud",
-        "PORT": 0,
-        "USER": "ELEQ-IoT",
-        "PASSWORD": "EL3QS7W!130",
-        "RETAIN": true,
-        "KEEPALIVE": 7200,
+        "TOPIC": "",
+        "CLIENT_ID": "",
+        "SERVER": "",
+        "PORT": 1883,
+        "USER": "",
+        "PASSWORD": "",
+        "RETAIN": false,
+        "KEEPALIVE": 600,
         "SEND_KEEPALIVE": 60,
         "SEND_MEASUREMENT": 300,
         "QOS": 0,
         "SSL": {
-            "USE_SSL": true,
+            "USE_SSL": false,
             "KEY": null,
             "CERT": null,
-            "SERVER_HOSTNAME": "d5465a8279354d2daa53f46057cbc803.s2.eu.hivemq.cloud"
+            "SERVER_HOSTNAME": ""
         },
         "SOCKET_TIMEOUT": 3,
         "MESSAGE_TIMEOUT": 15
