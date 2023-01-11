@@ -239,8 +239,9 @@ def main(data: Data, mqtt: Connector, buses: list[str]) -> None:
         try:
             # Check if message has arrived. This is to ensure the memory
             # does not overload. Overload of memory only applies to QoS 1.
-            if MQTT['QOS'] == 1:
-                mqtt.check_msg()
+            # if MQTT['QOS'] == 1:
+            #     # This function works best if the module is subscribed to a topic.
+            #     mqtt.check_msg()
             mqtt.send_queue()
         except AttributeError as e:
             # If a connection with the broker could not be established during startup.
