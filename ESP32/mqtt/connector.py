@@ -9,8 +9,8 @@ IMPORTING THIRD PARTY LIBRARIES:
 >>> import upip
 >>> upip.cleanup()
 >>> upip.get_install_path()
->>> upip.install("micropython-umqtt.simple2")
->>> upip.install("micropython-umqtt.robust2")
+>>> upip.install("micropython-umqtt.simple2", "/lib")
+>>> upip.install("micropython-umqtt.robust2", "/lib")
 
 No PuTTY on your machine? You can download and install it here:
 https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html
