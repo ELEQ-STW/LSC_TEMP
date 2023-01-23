@@ -11,6 +11,7 @@ from helpers import Data
 from helpers import Settings
 from sensor import BMP280
 from sensor import SETTINGS as S
+from wireless import WLAN
 from mqtt import Connector
 
 
@@ -126,9 +127,10 @@ def setup() -> tuple[Data, Connector, list[str]]:
     )
     i2c.bmp280_setup(
         sensor,
-        # Dictionary unpacking
-        **{k.lower(): list(v.values()) if k == 'OS' else v
-           for k, v in SENSOR['SETUP'].items()}
+        power=S().powerMode(SENSOR['SETUP']['POWER']),
+        iir=S().iirMode(SENSOR['SETUP']['IIR']),
+        spi=SENSOR['SETUP']['SPI'],
+        os=S().osMode(*list(SENSOR['SETUP']['OS'].values())),
     )
 
     # Try to connect to the WiFi network.
@@ -227,6 +229,10 @@ def main(data: Data, mqtt: Connector, buses: list[str]) -> None:
 
         # Send message if available
         if send_message:
+            if not WLAN('', '').isConnected():  # Lost connection with Wi-Fi
+                if ESP32['DEBUG']:
+                    print('Wi-Fi connection has been lost, rebooting device...')
+                reset_device()
             message: bytes = bytes(
                 jsonize(time=isinstance(message, dict), message=message),
                 'utf-8'
@@ -240,11 +246,13 @@ def main(data: Data, mqtt: Connector, buses: list[str]) -> None:
             # Check if message has arrived. This is to ensure the memory
             # does not overload. Overload of memory only applies to QoS 1.
             # if MQTT['QOS'] == 1:
-            #     # This function works best if the module is subscribed to a topic.
+            #     # This function works best if the module is subscribed to
+            #     # a topic.
             #     mqtt.check_msg()
             mqtt.send_queue()
         except AttributeError as e:
-            # If a connection with the broker could not be established during startup.
+            # If a connection with the broker could not be established
+            # during startup.
             # raise AttributeError(f'Broker could not be reached.\n{e}')
             reset_device()
 
